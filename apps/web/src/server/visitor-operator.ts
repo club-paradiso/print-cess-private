@@ -31,6 +31,7 @@ export function isValidVisitorOperatorCookie(
   const hasToken = Boolean(token && /^\d{13}\.[A-Za-z0-9_-]{43}$/.test(token));
   if (!hasKey || !hasToken || !key || !token) return false;
   const [expiration, mac] = token.split(".");
+  if (!expiration || !mac) return false;
   const expires = Number(expiration);
   const validExpiration =
     Number.isSafeInteger(expires) && expires > now && expires <= now + VALID_FOR_MS;
