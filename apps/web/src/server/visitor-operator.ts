@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-/** A bounded operator authorization cookie; no operator secret is put into browser bundles. */
+/** Signed and expiring staff authorization for the visitor counter. */
 export const VISITOR_OPERATOR_COOKIE = "pc_visitor_operator";
 const VALID_FOR_MS = 30 * 60_000;
 const DOMAIN = "print-cess:visitor-operator:v1:";
@@ -25,14 +25,13 @@ export function isValidVisitorOperatorCookie(
   now = Date.now(),
   key = process.env.KIOSK_REGISTRATION_SECRET,
 ): boolean {
-  if (!key || key.length < 32 || !token || !/^\d{13}\.[A-Za-z0-9_-]{43}$/.test(token)) {
-    return false;
-  }
+  const hasKey = Boolean(key && key.length >= 32);
+  const hasToken = Boolean(token && /^\d{13}\.[A-Za-z0-9_-]{43}$/.test(token));
+  if (!hasKey || !hasToken) return false;
   const [expiration, mac] = token.split(".");
   const expires = Number(expiration);
-  if (!Number.isSafeInteger(expires) || expires <= now || expires > now + VALID_FOR_MS) {
-    return false;
-  }
+  const validExpiration = Number.isSafeInteger(expires) && expires > now && expires <= now + VALID_FOR_MS;
+  if (!validExpiration) return false;
   const candidate = Buffer.from(mac, "base64url");
   const expected = signature(expiration, key);
   return candidate.length === expected.length && timingSafeEqual(candidate, expected);
