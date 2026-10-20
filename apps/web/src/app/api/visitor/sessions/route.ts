@@ -7,6 +7,7 @@ import { assertAllowedOrigin, errorResponse, json, readJson } from "@/server/htt
 import { enforceRateLimit } from "@/server/rate-limit";
 import { ServiceError } from "@/server/errors";
 import { secretMatches } from "@/server/auth";
+import { isValidVisitorOperatorCookie, VISITOR_OPERATOR_COOKIE } from "@/server/visitor-operator";
 
 export const runtime = "nodejs";
 
@@ -30,7 +31,12 @@ export async function POST(request: Request) {
     if (process.env.NODE_ENV === "production") {
       const expected = process.env.KIOSK_REGISTRATION_SECRET;
       const supplied = request.headers.get("x-kiosk-registration-secret");
-      if (!secretMatches(supplied, expected)) {
+      const operatorCookie = request.headers.get("cookie")
+        ?.split(";")
+        .map((item) => item.trim())
+        .find((item) => item.startsWith(`${VISITOR_OPERATOR_COOKIE}=`))
+        ?.slice(VISITOR_OPERATOR_COOKIE.length + 1);
+      if (!secretMatches(supplied, expected) && !isValidVisitorOperatorCookie(operatorCookie, Date.now(), expected)) {
         throw new ServiceError("unauthorized", "Kiosk registration is not authorized.", 401);
       }
     }

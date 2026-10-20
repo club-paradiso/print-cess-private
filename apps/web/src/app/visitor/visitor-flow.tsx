@@ -80,6 +80,7 @@ async function mintVisitorSession(): Promise<VisitorSession> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ protocolVersion: 1, kioskPublicKey, kioskPublicKeyFingerprint }),
   });
+  if (response.status === 401) throw new Error("visitor_operator_auth_required");
   if (!response.ok) throw new Error("visitor session registration failed");
   const body = (await response.json()) as {
     sessionId: string;
@@ -148,6 +149,10 @@ export function VisitorPrintFlow({ copy }: { copy: VisitorCopy }) {
   const [status, setStatus] = useState<VisitorStatus>("preparing");
   const [remainingMs, setRemainingMs] = useState(0);
   const [failed, setFailed] = useState(false);
+  const [needsAuth, setNeedsAuth] = useState(false);
+  const [operatorSecret, setOperatorSecret] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authFailed, setAuthFailed] = useState(false);
   const generation = useRef(0);
 
   const start = useCallback(async () => {
@@ -161,8 +166,14 @@ export function VisitorPrintFlow({ copy }: { copy: VisitorCopy }) {
       setSession(created);
       setRemainingMs(created.expiresAt - Date.now());
       setStatus("waiting");
-    } catch {
-      if (generation.current === run) setFailed(true);
+    } catch (error) {
+      if (generation.current === run) {
+        if (error instanceof Error && error.message === "visitor_operator_auth_required") {
+          setNeedsAuth(true);
+        } else {
+          setFailed(true);
+        }
+      }
     }
   }, []);
 
@@ -179,15 +190,43 @@ export function VisitorPrintFlow({ copy }: { copy: VisitorCopy }) {
         setRemainingMs(created.expiresAt - Date.now());
         setStatus("waiting");
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (cancelled || generation.current !== run) return;
-        setFailed(true);
+        if (error instanceof Error && error.message === "visitor_operator_auth_required") {
+          setNeedsAuth(true);
+        } else {
+          setFailed(true);
+        }
       });
     return () => {
       cancelled = true;
       generation.current += 1;
     };
   }, []);
+
+  const authenticateOperator = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (authBusy || !operatorSecret) return;
+    setAuthBusy(true);
+    setAuthFailed(false);
+    const secret = operatorSecret;
+    setOperatorSecret("");
+    try {
+      const response = await fetch("/api/visitor/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ registrationSecret: secret }),
+      });
+      if (!response.ok) throw new Error("operator authentication failed");
+      setNeedsAuth(false);
+      void start();
+    } catch {
+      setAuthFailed(true);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
 
   // Session-expiry countdown: the counter screen shows exactly when the
   // server's file lifetime ends and the uploaded ciphertext is destroyed.
@@ -260,6 +299,24 @@ export function VisitorPrintFlow({ copy }: { copy: VisitorCopy }) {
 
   return (
     <div className="visitor-flow">
+      {needsAuth && (
+        <form onSubmit={authenticateOperator} className="visitor-notice visitor-notice--warn">
+          <label htmlFor="visitor-operator-secret">직원 인증키 / Staff access key</label>
+          <input
+            id="visitor-operator-secret"
+            type="password"
+            autoComplete="off"
+            value={operatorSecret}
+            onChange={(event) => setOperatorSecret(event.target.value)}
+            required
+            maxLength={256}
+          />
+          <button type="submit" disabled={authBusy || !operatorSecret}>
+            {authBusy ? "인증 중…" : "직원 인증 / Unlock visitor printing"}
+          </button>
+          {authFailed && <p role="alert">직원 인증에 실패했습니다. 인증키를 확인하세요.</p>}
+        </form>
+      )}
       <div className="visitor-flow__main">
         <div className="visitor-qr-card">
           {session ? (
