@@ -22,6 +22,15 @@ const configSchema = z.object({
   qrTtlMs: z.number().int().min(30_000).max(300_000),
   sessionTtlMs: z.number().int().min(30_000).max(300_000),
   signedUrlTtlMs: z.number().int().min(15_000).max(180_000),
+  // A visitor counter session (see /visitor) keeps its QR alive longer than
+  // the default public QR: visitors may queue before scanning. It is still a
+  // hard file lifetime — the session-expiry cleanup deletes the uploaded
+  // ciphertext once it passes — so it stays bounded at thirty minutes.
+  visitorTtlMs: z
+    .number()
+    .int()
+    .min(60_000)
+    .max(30 * 60_000),
   // A hand-off between two people is not a print job: the receiver may be in
   // another room, or on their way, so a drop lives minutes to hours rather
   // than the two minutes a kiosk QR code is worth.
@@ -76,6 +85,7 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): Server
     qrTtlMs: Number(environment.QR_TTL_SECONDS ?? 120) * 1000,
     sessionTtlMs: Number(environment.SESSION_TTL_SECONDS ?? 180) * 1000,
     signedUrlTtlMs: Number(environment.SIGNED_URL_TTL_SECONDS ?? 120) * 1000,
+    visitorTtlMs: Number(environment.VISITOR_TTL_SECONDS ?? 600) * 1000,
     dropTtlMs: Number(environment.DROP_TTL_SECONDS ?? 1800) * 1000,
     dropMaxTotalBytes: Number(environment.DROP_MAX_TOTAL_MB ?? 2048) * 1024 * 1024,
     demoEnabled: isDemoRouteEnabled(environment) || environment.NODE_ENV !== "production",

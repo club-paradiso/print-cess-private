@@ -13,6 +13,7 @@ import "./admin.css";
 import "./drop.css";
 import "./quota.css";
 import "./workstation.css";
+import "./visitor.css";
 import "./multi-print.css";
 import "./scan.css";
 import "./scan-pro.css";
