@@ -25,21 +25,12 @@ export function isValidVisitorOperatorCookie(
   now = Date.now(),
   key = process.env.KIOSK_REGISTRATION_SECRET,
 ): boolean {
-  if (
-    !key ||
-    key.length < 32 ||
-    !token ||
-    !/^\d{13}\.[A-Za-z0-9_-]{43}$/.test(token)
-  ) {
+  if (!key || key.length < 32 || !token || !/^\d{13}\.[A-Za-z0-9_-]{43}$/.test(token)) {
     return false;
   }
   const [expiration, mac] = token.split(".");
   const expires = Number(expiration);
-  if (
-    !Number.isSafeInteger(expires) ||
-    expires <= now ||
-    expires > now + VALID_FOR_MS
-  ) {
+  if (!Number.isSafeInteger(expires) || expires <= now || expires > now + VALID_FOR_MS) {
     return false;
   }
   const candidate = Buffer.from(mac, "base64url");
