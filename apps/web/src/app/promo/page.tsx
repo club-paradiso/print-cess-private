@@ -45,11 +45,7 @@ export default function RoyalPromoPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link
-          href="/promo"
-          className={styles.brand}
-          aria-label="Print-cess by Club Paradiso 캠페인 홈"
-        >
+        <Link href="/promo" className={styles.brand}>
           <Printer aria-hidden="true" />
           <span>
             <strong>Print-cess</strong>
