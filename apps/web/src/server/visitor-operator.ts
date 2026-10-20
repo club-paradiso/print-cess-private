@@ -29,7 +29,7 @@ export function isValidVisitorOperatorCookie(
 ): boolean {
   const hasKey = Boolean(key && key.length >= 32);
   const hasToken = Boolean(token && /^\d{13}\.[A-Za-z0-9_-]{43}$/.test(token));
-  if (!hasKey || !hasToken) return false;
+  if (!hasKey || !hasToken || !key || !token) return false;
   const [expiration, mac] = token.split(".");
   const expires = Number(expiration);
   const validExpiration =
