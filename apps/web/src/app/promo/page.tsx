@@ -45,10 +45,7 @@ export default function RoyalPromoPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link
-          href="/promo"
-          className={styles.brand}
-        >
+        <Link href="/promo" className={styles.brand}>
           <Printer aria-hidden="true" />
           <span>
             <strong>Print-cess</strong>
