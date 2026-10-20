@@ -125,6 +125,40 @@ export async function createPrintSession(input: {
   return { session, uploadToken, kioskToken };
 }
 
+/**
+ * Mints a visitor (government-counter) print session. This is the same state
+ * machine as {@link createPrintSession} — QR → claim → upload → kiosk print →
+ * cleanup — but the QR and the uploaded file live under the dedicated,
+ * configurable visitor TTL instead of the public QR window. Session-expiry
+ * cleanup still deletes the orphaned encrypted blob once `expiresAt` passes,
+ * so an abandoned counter session can never pin a visitor's file on the
+ * server past its lifetime.
+ */
+export async function createVisitorPrintSession(input: {
+  kioskPublicKey: string;
+  kioskPublicKeyFingerprint: string;
+}): Promise<{ session: PrintSession; uploadToken: string; kioskToken: string }> {
+  const runtime = getRuntime();
+  const now = Date.now();
+  const sessionId = generateToken(16);
+  const uploadToken = generateToken(32);
+  const kioskToken = generateToken(32);
+  const session: PrintSession = {
+    protocolVersion: PROTOCOL_VERSION,
+    sessionId,
+    status: "waiting",
+    kioskPublicKey: input.kioskPublicKey,
+    kioskPublicKeyFingerprint: input.kioskPublicKeyFingerprint,
+    createdAt: now,
+    expiresAt: now + runtime.config.visitorTtlMs,
+    uploadTokenHash: await hashToken(uploadToken, "upload"),
+    kioskTokenHash: await hashToken(kioskToken, "kiosk"),
+    revision: 0,
+  };
+  await runtime.sessions.create(session, runtime.config.visitorTtlMs);
+  return { session, uploadToken, kioskToken };
+}
+
 export function createBlobPath(): string {
   return `v1/${generateToken(16)}.bin`;
 }

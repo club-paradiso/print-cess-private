@@ -21,3 +21,41 @@ describe("session lifetime configuration", () => {
     ).toThrow(/QR_TTL_SECONDS must not exceed SESSION_TTL_SECONDS/u);
   });
 });
+
+describe("visitor counter session lifetime configuration", () => {
+  it("defaults the visitor QR and file lifetime to ten minutes", () => {
+    expect(loadConfig({ NODE_ENV: "test", PRINT_CESS_ADAPTER_MODE: "local" })).toMatchObject({
+      visitorTtlMs: 600_000,
+    });
+  });
+
+  it("accepts a configured visitor lifetime", () => {
+    expect(
+      loadConfig({
+        NODE_ENV: "test",
+        PRINT_CESS_ADAPTER_MODE: "local",
+        VISITOR_TTL_SECONDS: "900",
+      }),
+    ).toMatchObject({ visitorTtlMs: 900_000 });
+  });
+
+  it("rejects a visitor lifetime below one minute", () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: "test",
+        PRINT_CESS_ADAPTER_MODE: "local",
+        VISITOR_TTL_SECONDS: "30",
+      }),
+    ).toThrow();
+  });
+
+  it("rejects a visitor lifetime above thirty minutes", () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: "test",
+        PRINT_CESS_ADAPTER_MODE: "local",
+        VISITOR_TTL_SECONDS: "3600",
+      }),
+    ).toThrow();
+  });
+});
