@@ -322,7 +322,10 @@ export function VisitorPrintFlow({ copy }: { copy: VisitorCopy }) {
           {session ? (
             <img src={session.qrImage} alt={copy.qrAlt} width={320} height={320} />
           ) : (
-            <div className="visitor-qr-card__placeholder" role="status">
+            <div
+              className={`visitor-qr-card__placeholder${failed ? " visitor-qr-card__placeholder--failed" : ""}`}
+              role="status"
+            >
               {failed ? <AlertTriangle aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
               <p>{failed ? copy.preparingFailed : copy.preparing}</p>
             </div>

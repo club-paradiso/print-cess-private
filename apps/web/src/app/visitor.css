@@ -34,6 +34,12 @@
   height: 20px;
 }
 
+.visitor-back:focus-visible,
+.visitor-restart:focus-visible {
+  outline: 3px solid var(--pc-focus-ring);
+  outline-offset: 3px;
+}
+
 .visitor-hero {
   display: grid;
   gap: 16px;
@@ -121,6 +127,22 @@
   width: 40px;
   height: 40px;
   margin: 0 auto;
+}
+
+.visitor-qr-card__placeholder:not(.visitor-qr-card__placeholder--failed) svg {
+  animation: visitor-spin 1.6s linear infinite;
+}
+
+@keyframes visitor-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visitor-qr-card__placeholder:not(.visitor-qr-card__placeholder--failed) svg {
+    animation: none;
+  }
 }
 
 .visitor-timer {
