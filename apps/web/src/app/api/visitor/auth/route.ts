@@ -14,8 +14,15 @@ export async function POST(request: Request) {
   try {
     const server = getRuntime();
     assertAllowedOrigin(request, server.config);
-    enforceRateLimit(`visitor-unlock:${request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local"}`, 5, 300_000);
-    const body = await readJson(request, z.object({ registrationSecret: z.string().min(1).max(256) }));
+    enforceRateLimit(
+      `visitor-unlock:${request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local"}`,
+      5,
+      300_000,
+    );
+    const body = await readJson(
+      request,
+      z.object({ registrationSecret: z.string().min(1).max(256) }),
+    );
     if (!secretMatches(body.registrationSecret, process.env.KIOSK_REGISTRATION_SECRET)) {
       throw new ServiceError("unauthorized", "Staff authentication failed.", 401);
     }
