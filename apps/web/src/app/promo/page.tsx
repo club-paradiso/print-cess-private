@@ -48,7 +48,6 @@ export default function RoyalPromoPage() {
         <Link
           href="/promo"
           className={styles.brand}
-          aria-label="Print-cess by Club Paradiso 캠페인 홈"
         >
           <Printer aria-hidden="true" />
           <span>
