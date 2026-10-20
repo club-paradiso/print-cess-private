@@ -14,7 +14,9 @@ describe("visitor operator authorization", () => {
   it("rejects tampering, future-dated, malformed and unsigned values", () => {
     const valid = issueVisitorOperatorCookie(now, secret);
     expect(isValidVisitorOperatorCookie(valid.slice(0, -1) + "x", now, secret)).toBe(false);
-    expect(isValidVisitorOperatorCookie(issueVisitorOperatorCookie(now + 1, secret), now, secret)).toBe(false);
+    expect(
+      isValidVisitorOperatorCookie(issueVisitorOperatorCookie(now + 1, secret), now, secret),
+    ).toBe(false);
     expect(isValidVisitorOperatorCookie("nope", now, secret)).toBe(false);
     expect(isValidVisitorOperatorCookie(valid, now)).toBe(false);
   });
