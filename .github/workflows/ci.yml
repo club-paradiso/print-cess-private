@@ -52,10 +52,6 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
-      - name: Show expected visitor authorization formatting
-        if: failure()
-        run: pnpm exec prettier apps/web/src/server/visitor-operator.ts
-
       - name: Lint
         run: pnpm lint
 

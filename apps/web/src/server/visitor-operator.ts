@@ -6,7 +6,9 @@ const VALID_FOR_MS = 30 * 60_000;
 const DOMAIN = "print-cess:visitor-operator:v1:";
 
 function signature(expiration: string, key: string): Buffer {
-  return createHmac("sha256", key).update(DOMAIN + expiration).digest();
+  return createHmac("sha256", key)
+    .update(DOMAIN + expiration)
+    .digest();
 }
 
 export function issueVisitorOperatorCookie(
@@ -30,7 +32,8 @@ export function isValidVisitorOperatorCookie(
   if (!hasKey || !hasToken) return false;
   const [expiration, mac] = token.split(".");
   const expires = Number(expiration);
-  const validExpiration = Number.isSafeInteger(expires) && expires > now && expires <= now + VALID_FOR_MS;
+  const validExpiration =
+    Number.isSafeInteger(expires) && expires > now && expires <= now + VALID_FOR_MS;
   if (!validExpiration) return false;
   const candidate = Buffer.from(mac, "base64url");
   const expected = signature(expiration, key);
