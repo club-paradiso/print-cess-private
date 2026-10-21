@@ -6,7 +6,6 @@ function main(): void {
   try {
     config = parseWorkerConfig(process.env);
   } catch (error) {
-    // Configuration errors are fatal and must never echo the secret.
     process.stderr.write(
       `${JSON.stringify({
         ts: new Date().toISOString(),
