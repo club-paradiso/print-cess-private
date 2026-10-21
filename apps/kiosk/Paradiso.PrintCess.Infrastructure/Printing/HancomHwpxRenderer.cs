@@ -68,9 +68,6 @@ internal static class HancomHwpxRenderer
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            // Let Hancom detect the real document format. This is more robust than forcing
-            // HWP/HWPX from the extension and is the vendor-recommended behavior when the
-            // exact underlying format is not guaranteed by the filename alone.
             var opened = Invoke(
                 automation,
                 "Open",
@@ -132,7 +129,6 @@ internal static class HancomHwpxRenderer
             }
             catch
             {
-                // The application-owned cleanup job retries abandoned temporary directories.
             }
         }
     }
@@ -199,7 +195,6 @@ internal static class HancomHwpxRenderer
         }
         catch
         {
-            // Cleanup must continue even when the automation object is already shutting down.
         }
     }
 
@@ -230,7 +225,6 @@ internal static class HancomHwpxRenderer
         }
         catch
         {
-            // Best effort only; encrypted transfer storage remains independently short-lived.
         }
     }
 }
