@@ -315,50 +315,53 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
    * folder is a separate, explicitly requested action; never silently request
    * file-system access on the ordinary Save all button.
    */
-  const saveRemaining = useCallback(async (mode: "download" | "folder" = "download") => {
-    if (!drop) return;
-    setNoticeKey(undefined);
-    const outstanding = fileStates
-      .map((state, index) => ({ state, index }))
-      .filter(({ state }) => state.status !== "saved" && state.status !== "shared")
-      .map(({ index }) => index);
-    if (outstanding.length === 0) return;
+  const saveRemaining = useCallback(
+    async (mode: "download" | "folder" = "download") => {
+      if (!drop) return;
+      setNoticeKey(undefined);
+      const outstanding = fileStates
+        .map((state, index) => ({ state, index }))
+        .filter(({ state }) => state.status !== "saved" && state.status !== "shared")
+        .map(({ index }) => index);
+      if (outstanding.length === 0) return;
 
-    let folder: SaveTarget | null = null;
-    if (mode === "folder" && canPickFolder) {
-      try {
-        folder = await pickDirectoryTarget();
-      } catch (error) {
-        setNoticeKey(dropErrorKey(error));
-        return;
-      }
-      // A dismissed folder dialog is a decision, not a failure to route around.
-      if (!folder) return;
-    }
-
-    const controller = new AbortController();
-    abort.current = controller;
-    const release = await holdScreenAwake();
-    try {
-      for (const index of outstanding) {
-        const file = drop.manifest.files[index];
-        if (!file) continue;
+      let folder: SaveTarget | null = null;
+      if (mode === "folder" && canPickFolder) {
         try {
-          const target = folder ?? downloadTarget(file.size);
-          await runSave(target, index, controller.signal);
+          folder = await pickDirectoryTarget();
         } catch (error) {
-          updateFile(index, { status: "failed", errorKey: dropErrorKey(error) });
-          // One file failing is not the transfer failing. Carry on with the
-          // rest, unless the visitor stopped it themselves.
-          if (controller.signal.aborted) break;
+          setNoticeKey(dropErrorKey(error));
+          return;
         }
+        // A dismissed folder dialog is a decision, not a failure to route around.
+        if (!folder) return;
       }
-      reportIfComplete(drop);
-    } finally {
-      release();
-      abort.current = null;
-    }
-  }, [canPickFolder, drop, fileStates, reportIfComplete, runSave, updateFile]);
+
+      const controller = new AbortController();
+      abort.current = controller;
+      const release = await holdScreenAwake();
+      try {
+        for (const index of outstanding) {
+          const file = drop.manifest.files[index];
+          if (!file) continue;
+          try {
+            const target = folder ?? downloadTarget(file.size);
+            await runSave(target, index, controller.signal);
+          } catch (error) {
+            updateFile(index, { status: "failed", errorKey: dropErrorKey(error) });
+            // One file failing is not the transfer failing. Carry on with the
+            // rest, unless the visitor stopped it themselves.
+            if (controller.signal.aborted) break;
+          }
+        }
+        reportIfComplete(drop);
+      } finally {
+        release();
+        abort.current = null;
+      }
+    },
+    [canPickFolder, drop, fileStates, reportIfComplete, runSave, updateFile],
+  );
 
   const shareOne = useCallback(
     async (index: number) => {
