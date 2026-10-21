@@ -52,8 +52,6 @@ const OPENCV_RETRY_COOLDOWN_MS = 30_000;
 
 async function getOpenCv(): Promise<CvRuntime> {
   if (!cvPromise) {
-    // Live camera inspects a frame several times per second. Repeatedly
-    // attempting a blocked/unsupported WASM initialization can freeze phones.
     if (Date.now() < cvRetryAfter) throw new Error("scanOpenCvUnavailable");
     cvPromise = import("@opencvjs/web")
       .then(({ loadOpenCV }) => loadOpenCV())
@@ -62,7 +60,6 @@ async function getOpenCv(): Promise<CvRuntime> {
         return runtime;
       })
       .catch((error: unknown) => {
-        // A transient failure can be retried, but not every video frame.
         cvRetryAfter = Date.now() + OPENCV_RETRY_COOLDOWN_MS;
         cvPromise = undefined;
         throw error;
@@ -177,9 +174,6 @@ export function analyzeCapturePixels(
       ? 0
       : Math.max(0, laplacianSquared / laplacianSamples - lapMean * lapMean);
   const sharpness = Math.min(1, Math.sqrt(lapVariance) / 32);
-  // White paper often contains entire tiles of pure white pixels. A saturated
-  // tile alone is not glare: only a bright outlier against darker neighboring
-  // document regions suggests a blown highlight.
   const tileBrightness = Array.from(tileSamples, (count, index) =>
     count ? tileLuminance[index]! / count : 0,
   )
@@ -245,8 +239,6 @@ export async function detectDocument(file: File): Promise<DocumentDetection> {
     try {
       return await detectDocumentOnCanvas(loaded.canvas);
     } catch (error) {
-      // The user can still make a basic PDF if the OpenCV/WASM runtime fails
-      // (particularly useful on older mobile browsers).
       console.warn("[scan] edge detection unavailable; allowing manual review", error);
       return { quad: FULL_FRAME_QUAD, confidence: 0, detected: false };
     }
@@ -362,9 +354,6 @@ export async function processDocument(
     try {
       return await processCanvas(loaded.canvas, options);
     } catch (error) {
-      // Preserve the document instead of blocking PDF creation when WASM or
-      // an advanced image filter cannot initialize. No edge correction or
-      // enhancement is claimed on this basic canvas fallback.
       console.warn("[scan] advanced processing unavailable; using canvas fallback", error);
       return await processCanvasFallback(loaded.canvas, options);
     }
@@ -378,8 +367,6 @@ async function processCanvasFallback(
   options: { quad: DocumentQuad; filter: ScanFilter; rotation?: number },
 ): Promise<ProcessedDocument> {
   const quad = clampQuad(options.quad);
-  // Crop to the bounding rectangle. Without OpenCV, perspective correction
-  // is not available; the original pixels are still usable for an image PDF.
   const x0 = Math.max(
     0,
     Math.floor(Math.min(...quad.map((point) => point.x)) * sourceCanvas.width),
@@ -507,11 +494,6 @@ function illuminationNormalizedGray(
   return normalized;
 }
 
-/**
- * Linear levels: `black` and below to 0, `white` and above to 255. After
- * illumination normalization the paper sits near 245 on every page, so a fixed
- * white point is stable; the black point follows the darkest ink.
- */
 function levels(
   cv: CvRuntime,
   source: InstanceType<CvRuntime["Mat"]>,
@@ -524,7 +506,6 @@ function levels(
   return output;
 }
 
-/** The 1st-percentile grey, capped so a page with no dark ink is not stretched into noise. */
 function darkPoint(gray: InstanceType<CvRuntime["Mat"]>): number {
   const data = gray.data as Uint8Array;
   const histogram = new Uint32Array(256);
@@ -573,7 +554,6 @@ function applyFilter(cv: CvRuntime, source: InstanceType<CvRuntime["Mat"]>, filt
   const normalized = illuminationNormalizedGray(cv, source);
 
   if (filter === "grayscale") {
-    // Keep the tones; only lift the page to white.
     const output = levels(cv, normalized, 0, 240);
     normalized.delete();
     return output;
@@ -597,9 +577,6 @@ function applyFilter(cv: CvRuntime, source: InstanceType<CvRuntime["Mat"]>, filt
     return output;
   }
 
-  // Auto clean: paper to white, ink to black, then a light sharpen. Histogram
-  // equalization used to sit here; on a page that is mostly paper it spread
-  // the paper itself across the grey range and turned every page grey.
   const stretched = levels(cv, normalized, darkPoint(normalized), 228);
   const blurred = new cv.Mat();
   const output = new cv.Mat();
@@ -611,15 +588,6 @@ function applyFilter(cv: CvRuntime, source: InstanceType<CvRuntime["Mat"]>, filt
   return output;
 }
 
-/**
- * The page's real width:height, recovered from how the rectangle is
- * foreshortened (Zhang & He, "Whiteboard scanning and image enhancement",
- * 2007), with the principal point at the image centre. Taking the longer of
- * each pair of opposite sides instead squashes a tilted page: an A4 sheet
- * photographed at 25° came out about a quarter too wide. Returns undefined when
- * the quad is (nearly) parallel to the sensor or the estimate is implausible,
- * so the caller keeps the side-length estimate.
- */
 export function perspectiveAspectRatio(
   quad: DocumentQuad,
   sourceWidth: number,
@@ -645,18 +613,10 @@ export function perspectiveAspectRatio(
   const [n21, n22, n23] = n2 as [number, number, number];
   const [n31, n32, n33] = n3 as [number, number, number];
 
-  // With no measurable perspective the image is an affine view of the page,
-  // where the side lengths are already the right proportions.
   const perspectiveA = Math.abs(n23) > 1e-3;
   const perspectiveB = Math.abs(n33) > 1e-3;
   if (!perspectiveA && !perspectiveB) return undefined;
   const longest = Math.max(sourceWidth, sourceHeight);
-  // With two vanishing points the focal length follows from the rectangle
-  // itself. A sheet tilted straight back has only one, and then nothing in the
-  // photo fixes it, so a typical phone main camera stands in: about 0.8x the
-  // long edge in pixels (a 26 mm-equivalent lens). The same prior replaces an
-  // estimate outside what a phone camera can be (0.4-4x), which means the
-  // corners were too noisy to trust.
   const focalPrior = (0.8 * longest) ** 2;
   let focalSquared = focalPrior;
   if (perspectiveA && perspectiveB) {
@@ -685,8 +645,6 @@ function documentDimensions(quad: DocumentQuad, sourceWidth: number, sourceHeigh
   let rawHeight = Math.max(left, right);
   const ratio = perspectiveAspectRatio(quad, sourceWidth, sourceHeight);
   if (ratio !== undefined) {
-    // Keep the longer measured side and derive the other from the true ratio,
-    // so no detail is thrown away along the page's longer dimension.
     if (rawHeight >= rawWidth) rawWidth = rawHeight * ratio;
     else rawHeight = rawWidth / ratio;
   }
@@ -706,9 +664,6 @@ function detectionScore(quad: DocumentQuad, coverage: number): number {
       const next = quad[(index + 1) % 4]!;
       return total + rightAngleScore(previous, point, next);
     }, 0) / 4;
-  // A page that fills half the frame is as good a capture as one that fills it
-  // all; scoring kept rising to 80% coverage, which favoured whatever large
-  // shape the edges happened to form over the page itself.
   const coverageScore = Math.min(1, Math.max(0, (coverage - 0.14) / 0.36));
   const borderPenalty = quad.some(
     (point) => point.x < 0.004 || point.x > 0.996 || point.y < 0.004 || point.y > 0.996,
@@ -726,18 +681,9 @@ function rightAngleScore(previous: ScanPoint, center: ScanPoint, next: ScanPoint
   const denominator = Math.hypot(ax, ay) * Math.hypot(bx, by);
   if (denominator === 0) return 0;
   const cosine = Math.abs((ax * bx + ay * by) / denominator);
-  // A rectangle seen at a realistic phone angle has corners well away from
-  // 90° (about 65–115° at a 40° tilt), so the score fades out only past ~37°.
   return Math.max(0, 1 - cosine / 0.8);
 }
 
-/**
- * True when any side of the quadrilateral lies along the frame edge. The edge
- * of the photo is not the edge of the page: a contour that follows it is the
- * desk, a tablecloth or the frame itself, and must not outscore the real page
- * just because it is larger. A page that really runs off the frame cannot be
- * found automatically either; it falls back to the full-frame crop for review.
- */
 export function runsAlongFrame(quad: DocumentQuad): boolean {
   const margin = 0.012;
   const onEdge = (point: ScanPoint) => ({

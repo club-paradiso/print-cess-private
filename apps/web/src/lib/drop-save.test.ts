@@ -1,6 +1,4 @@
 // @vitest-environment jsdom
-// Save destinations are browser APIs, so the choices between them can only
-// be exercised where a window, a document, and an anchor exist.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -13,14 +11,6 @@ import {
   supportsStreamingSave,
 } from "./drop-save";
 
-/**
- * What a save is allowed to claim about itself.
- *
- * The distinction under test is the one the receiving screen used to lose: a
- * file written through a handle the visitor chose is saved, and a blob handed
- * to the download machinery has started a download and nothing more. Every
- * assertion here is about which of those two sentences the code is entitled to.
- */
 
 const originalNavigator = globalThis.navigator;
 
@@ -34,7 +24,6 @@ function clearPickers() {
   delete (window as PickerWindow).showDirectoryPicker;
 }
 
-/** A writable that records what it was given and whether it was closed. */
 function fakeWritable() {
   const written: Uint8Array[] = [];
   let closed = false;
@@ -83,7 +72,6 @@ describe("saveCapabilities", () => {
     expect(saveCapabilities()).toMatchObject({ canPickFile: false, canPickDirectory: false });
     (window as PickerWindow).showSaveFilePicker = () => undefined;
     expect(saveCapabilities().canPickFile).toBe(true);
-    // A browser that exposes a save dialog need not expose a folder one.
     expect(saveCapabilities().canPickDirectory).toBe(false);
   });
 
@@ -190,8 +178,6 @@ describe("the download fallback", () => {
 
     const target = downloadTarget(16);
     expect(target.kind).toBe("download");
-    // This is the whole point: the browser was asked to download the file. That
-    // it reaches storage is not something this code can observe.
     expect(target.outcome).toBe("downloadStarted");
 
     const sink = await target.open({ name: "photo.jpg", type: "image/jpeg" });
@@ -202,8 +188,6 @@ describe("the download fallback", () => {
   });
 
   it("refuses a file too large to assemble in memory instead of crashing the tab", () => {
-    // Without private origin storage the chunks and the blob built from them are
-    // both live at once, so the real cost approaches twice the file size.
     expect(() => downloadTarget(MEMORY_SAVE_LIMIT_BYTES + 1)).toThrow(SaveError);
     expect(() => downloadTarget(MEMORY_SAVE_LIMIT_BYTES + 1)).toThrow(/dropTooLargeForBrowser/u);
     expect(() => downloadTarget(MEMORY_SAVE_LIMIT_BYTES)).not.toThrow();
@@ -230,7 +214,6 @@ describe("the download fallback", () => {
     await expect(target.open({ name: "huge.bin", type: "" })).rejects.toMatchObject({
       code: "dropTooLargeForBrowser",
     });
-    // Small files still use the safe in-memory fallback when staging is denied.
     const small = downloadTarget(16);
     await expect(small.open({ name: "small.bin", type: "" })).resolves.toBeDefined();
   });
@@ -299,8 +282,6 @@ describe("a folder the visitor chose", () => {
     const target = await pickDirectoryTarget();
     await target!.open({ name: "../../etc/passwd", type: "" });
 
-    // Whatever the sender called it, nothing that reaches a directory handle
-    // can contain a separator.
     expect(directory.created[0]).not.toContain("/");
     expect(directory.created[0]).not.toContain("\\");
   });
