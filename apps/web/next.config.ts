@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+import { blobRelayRewrites } from "./src/server/blob-relay";
+
 const securityHeaders = [
   { key: "Cache-Control", value: "no-store, max-age=0" },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
@@ -30,6 +32,11 @@ const config: NextConfig = {
     "@print-cess/protocol",
     "@print-cess/ui",
   ],
+  async rewrites() {
+    // Lets managed networks that approved this origin, but not the storage
+    // host, still move ciphertext. See src/server/blob-relay.ts.
+    return { beforeFiles: blobRelayRewrites(), afterFiles: [], fallback: [] };
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

@@ -19,6 +19,11 @@ The workstation page performs a small local readiness check before the user star
 - standards-compliant Web Crypto;
 - the browser File, Blob, and FileReader APIs.
 
+It also performs two network checks:
+
+- the Print-cess API answers from this network (required — a proxy or allowlist that blocks the origin is reported here instead of failing mid-transfer);
+- the deployment offers the same-origin storage route described below (advisory).
+
 Normal browser download support is also checked. If richer save APIs are unavailable, the receive flow can fall back to an ordinary browser download where the browser and agency policy permit it.
 
 ## Browser baseline
@@ -30,6 +35,19 @@ Print-cess does not attempt to work around browser policy, endpoint security, DL
 ## Network expectations
 
 The user's browser should reach only the approved HTTPS Print-cess origin used by the deployment. Provider credentials and storage integrations remain server-side. If the organization uses an outbound allowlist, approve the exact deployed Print-cess origin rather than broad wildcard domains whenever possible.
+
+### Same-origin storage route
+
+By default the browser moves encrypted parts straight to blob storage on its own host (`<store>.private.blob.vercel-storage.com`). Managed networks often approve the Print-cess origin but block or categorise that storage host as cloud storage, which used to leave `/workstation` green while every transfer failed.
+
+The deployment therefore also exposes each signed part operation at `/relay/blob/<path>?<signature>` on its own origin. A platform rewrite (`apps/web/src/server/blob-relay.ts`, wired in `next.config.ts`) forwards it to this deployment's own Vercel Blob store only; it is not an open proxy, and the signature, expiry, size limit, and end-to-end encryption are unchanged.
+
+- Visitors who start from `/workstation` use the same-origin route from the first part.
+- Everyone else tries the storage host first; if the network refuses it (network error, timeout, 403/407/451, or 5xx), the part is retried through the relay and the rest of the browser session stays on the relay.
+- An agency allowlist therefore needs only the Print-cess origin.
+- Set `PRINT_CESS_BLOB_RELAY=off` to disable the route. It is only available with the Vercel Blob provider; Railway S3 deployments still use the storage host directly.
+
+Relayed bytes count toward the deployment's data transfer. Confirm on a representative workstation that an 8 MiB part passes through the relay; the platform's proxy limits for external rewrites apply.
 
 A production deployment must continue to satisfy the requirements in `VERCEL_DEPLOYMENT.md` and the repository security documentation. Do not weaken the existing origin checks or production fail-closed behavior to make a managed workstation appear compatible.
 
@@ -53,7 +71,8 @@ A green application CI build is not proof that a specific managed image is usabl
 Minimum acceptance evidence should include:
 
 - `/workstation` loads over HTTPS;
-- the readiness panel reports HTTPS, Web Crypto, and File API support;
+- the readiness panel reports HTTPS, Web Crypto, File API support, and a reachable Print-cess server;
+- the browser's network log shows part uploads and downloads going to `/relay/blob/...` on the Print-cess origin, with no request to the storage host;
 - a synthetic non-sensitive file can be sent from phone to workstation;
 - a synthetic non-sensitive file can be sent from workstation to phone;
 - the received bytes match the source bytes;

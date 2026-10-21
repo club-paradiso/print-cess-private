@@ -7,6 +7,7 @@ import {
   type DropCapabilities,
 } from "@print-cess/protocol";
 
+import { relayStoreId } from "@/server/blob-relay";
 import { assertAllowedOrigin, errorResponse, json } from "@/server/http";
 import { enforceRateLimit } from "@/server/rate-limit";
 import { clientAddress } from "@/server/request-identity";
@@ -38,6 +39,7 @@ export async function GET(request: Request) {
       maximumFileNameBytes: MAX_DROP_FILE_NAME_BYTES,
       chunkBytes: DROP_CHUNK_BYTES,
       ttlSeconds: Math.floor(server.config.dropTtlMs / 1000),
+      sameOriginTransfers: relayStoreId() !== null,
     };
     return json(capabilities);
   } catch (error) {

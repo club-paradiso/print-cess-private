@@ -172,6 +172,10 @@
   color: var(--pc-destructive);
 }
 
+.workstation-readiness li.is-pending strong {
+  color: var(--pc-text-muted);
+}
+
 .workstation-readiness > p {
   margin: 16px 0 0;
   color: var(--pc-text-muted);

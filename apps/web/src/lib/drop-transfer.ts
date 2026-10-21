@@ -485,30 +485,110 @@ async function putCiphertext(
   bytes: Uint8Array,
   signal?: AbortSignal,
 ): Promise<void> {
-  const response = await fetch(operation.url, {
-    method: "PUT",
-    // `slice` copies through the buffer rather than element by element, which
-    // matters when the element count is eight million.
-    headers: operation.headers,
-    body: bytes.slice().buffer,
-    signal: combineSignals(signal, 180_000),
+  await viaStorageRoute(operation, signal, async (url) => {
+    const response = await fetch(url, {
+      method: "PUT",
+      // `slice` copies through the buffer rather than element by element, which
+      // matters when the element count is eight million.
+      headers: operation.headers,
+      body: bytes.slice().buffer,
+      signal: combineSignals(signal, 180_000),
+    });
+    if (!response.ok) {
+      throw new ApiClientError("networkError", "Part upload failed", response.status);
+    }
   });
-  if (!response.ok) {
-    throw new ApiClientError("networkError", "Part upload failed", response.status);
-  }
 }
 
 async function getCiphertext(operation: DropOperation, signal?: AbortSignal): Promise<Uint8Array> {
-  const response = await fetch(operation.url, {
-    method: "GET",
-    headers: operation.headers,
-    cache: "no-store",
-    signal: combineSignals(signal, 180_000),
+  return viaStorageRoute(operation, signal, async (url) => {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: operation.headers,
+      cache: "no-store",
+      signal: combineSignals(signal, 180_000),
+    });
+    if (!response.ok) {
+      throw new ApiClientError("networkError", "Part download failed", response.status);
+    }
+    return new Uint8Array(await response.arrayBuffer());
   });
-  if (!response.ok) {
-    throw new ApiClientError("networkError", "Part download failed", response.status);
+}
+
+const STORAGE_ROUTE_KEY = "print-cess:storage-route";
+let relayPreferred: boolean | null = null;
+
+/**
+ * Asks every later part in this tab to travel through this origin rather than
+ * the storage host. The work-computer page sets it before the visitor starts,
+ * because managed networks commonly approve the Print-cess address and block
+ * the storage host, and a part that fails there first costs a retry cycle.
+ */
+export function preferSameOriginStorageRoute(): void {
+  relayPreferred = true;
+  try {
+    window.sessionStorage.setItem(STORAGE_ROUTE_KEY, "relay");
+  } catch {
+    // Storage can be blocked by policy; the in-memory preference still holds.
   }
-  return new Uint8Array(await response.arrayBuffer());
+}
+
+function isRelayPreferred(): boolean {
+  if (relayPreferred !== null) return relayPreferred;
+  try {
+    relayPreferred = window.sessionStorage.getItem(STORAGE_ROUTE_KEY) === "relay";
+  } catch {
+    relayPreferred = false;
+  }
+  return relayPreferred;
+}
+
+/**
+ * Runs one signed part operation, first against the storage host and, if the
+ * network refuses it, against the same-origin relay. A relay that works is
+ * remembered for the rest of the session so the remaining parts skip the
+ * blocked route. A failure the relay shares — an expired credential, a missing
+ * part — still reaches the caller's retry logic unchanged.
+ */
+async function viaStorageRoute<T>(
+  operation: DropOperation,
+  signal: AbortSignal | undefined,
+  run: (url: string) => Promise<T>,
+): Promise<T> {
+  const relayUrl = operation.relayUrl;
+  if (!relayUrl) return run(operation.url);
+  if (isRelayPreferred()) return run(relayUrl);
+  try {
+    return await run(operation.url);
+  } catch (error) {
+    if (signal?.aborted || !isRouteFailure(error)) throw error;
+    const result = await run(relayUrl);
+    preferSameOriginStorageRoute();
+    return result;
+  }
+}
+
+/**
+ * What a filtering proxy, DLP gateway or allowlist does to a request it will
+ * not carry: a network error (often a blocked CORS preflight or a redirect to
+ * a block page), a stalled connection, or a refusal status from the proxy
+ * itself. Signature failures also arrive as 4xx; the relay reproduces those
+ * and they then fall through to the ordinary retry path.
+ */
+function isRouteFailure(error: unknown): boolean {
+  if (error instanceof TypeError) return true;
+  if (error instanceof DOMException) return error.name === "TimeoutError";
+  if (error instanceof ApiClientError) {
+    return (
+      error.status === 403 || error.status === 407 || error.status === 451 || error.status >= 500
+    );
+  }
+  return false;
+}
+
+/** Test seam: forget the remembered route between cases. */
+export function resetStorageRouteForTests(): void {
+  relayPreferred = null;
 }
 
 async function runWithConcurrency<T>(

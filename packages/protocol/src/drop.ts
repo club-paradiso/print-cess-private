@@ -328,4 +328,9 @@ export type DropCapabilities = {
   maximumFileNameBytes: number;
   chunkBytes: number;
   ttlSeconds: number;
+  /**
+   * Whether ciphertext can also travel through this origin, for networks that
+   * approved the Print-cess address but not a separate storage host.
+   */
+  sameOriginTransfers?: boolean;
 };

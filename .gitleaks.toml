@@ -29,3 +29,10 @@ id = "generic-api-key"
   regexTarget = "match"
   paths = ['''^docs/design/ROYAL_PROMO_FIGMA\.md$''']
   regexes = ['''tqEGayhvXtIhAC1WQ89fps''']
+
+  [[rules.allowlists]]
+  description = "Synthetic Vercel Blob token used to test store-id parsing for the same-origin relay"
+  condition = "AND"
+  regexTarget = "match"
+  paths = ['''^apps/web/src/server/blob-relay\.test\.ts$''']
+  regexes = ['''^TOKEN = "vercel_blob_rw_AbC123xyz_secretpart"$''']

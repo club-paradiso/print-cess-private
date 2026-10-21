@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Wordmark } from "@print-cess/ui";
 
 import { requestLocale } from "@/lib/request-locale";
+import { relayStoreId } from "@/server/blob-relay";
 
 import { WorkstationReadiness } from "./workstation-readiness";
 
@@ -40,6 +41,10 @@ const copy = {
       "전송이 끝나면 받은 파일이 올바른 위치에 저장됐는지 확인하고 필요하면 전송을 즉시 삭제하세요.",
       "Internet Explorer 모드나 오래된 브라우저는 지원 대상이 아닙니다. 최신 Microsoft Edge 또는 Chrome 계열 브라우저를 권장합니다.",
     ],
+    allowlistRelay:
+      "기관에서 허용 도메인을 등록해야 한다면 이 사이트 주소 하나만 요청하면 됩니다. 파일은 별도 저장소 주소가 아닌 이 주소를 거쳐 전송됩니다.",
+    allowlistDirect:
+      "기관에서 허용 도메인을 등록해야 한다면 이 사이트 주소와 함께 파일 저장소 주소도 허용해야 합니다. 저장소 주소는 이 서비스 운영자에게 확인하세요.",
     back: "처음으로",
     checking: "이 PC의 브라우저 호환성을 확인하는 중…",
     ready: "이 PC에서 핵심 기능을 사용할 수 있습니다",
@@ -49,12 +54,17 @@ const copy = {
     webCrypto: "표준 Web Crypto 암호화",
     fileApi: "브라우저 파일 선택 기능",
     downloadApi: "브라우저 다운로드 기능",
+    serviceReach: "기관 네트워크에서 Print-cess 서버 연결",
+    sameOriginRoute: "저장소 주소 대신 Print-cess 주소로 전송",
     pass: "사용 가능",
+    pending: "확인 중",
     fail: "제한됨",
     blockedHint:
       "HTTPS 접속인지 확인하고 최신 Edge 또는 Chrome으로 다시 여세요. 기관 정책이 기능을 차단한 경우 Print-cess가 이를 우회하지 않습니다.",
     limitedHint:
-      "파일 수신은 가능할 수 있지만 저장 방식이 브라우저 기본 다운로드로 제한될 수 있습니다. 다운로드 폴더와 기관 보안정책을 확인하세요.",
+      "전송은 가능할 수 있지만 일부 기능이 제한됩니다. 저장 방식이 브라우저 기본 다운로드로 바뀔 수 있고, 저장소 주소를 차단하는 기관 망에서는 전송이 실패할 수 있습니다. 다운로드 폴더와 기관 보안정책을 확인하세요.",
+    unreachableHint:
+      "이 PC의 네트워크에서 Print-cess 서버에 연결하지 못했습니다. 기관 프록시나 허용 도메인 목록에 이 사이트 주소가 포함돼 있는지 정보화 담당 부서에 확인하세요.",
   },
   en: {
     eyebrow: "Government · public-sector work computer",
@@ -79,6 +89,10 @@ const copy = {
       "After receiving files, confirm where the browser saved them and delete the transfer immediately when appropriate.",
       "Internet Explorer mode and obsolete browsers are not supported. A current Microsoft Edge or Chromium-based browser is recommended.",
     ],
+    allowlistRelay:
+      "If your agency must allowlist domains, request only this site's address. Files travel through it rather than through a separate storage host.",
+    allowlistDirect:
+      "If your agency must allowlist domains, request this site's address and the file storage address too. Ask the operator of this service for the storage address.",
     back: "Back to start",
     checking: "Checking this browser for work-computer compatibility…",
     ready: "This browser supports the core transfer flow",
@@ -88,18 +102,29 @@ const copy = {
     webCrypto: "Standards-based Web Crypto",
     fileApi: "Browser file selection",
     downloadApi: "Browser download support",
+    serviceReach: "Print-cess server reachable from this network",
+    sameOriginRoute: "Transfers use the Print-cess address, not a storage host",
     pass: "Available",
+    pending: "Checking",
     fail: "Limited",
     blockedHint:
       "Confirm that you opened the HTTPS site and retry in a current Edge or Chrome browser. Print-cess will not bypass a feature blocked by agency policy.",
     limitedHint:
-      "Receiving may still work, but saving can fall back to the browser's normal Downloads folder. Check the saved location and your agency policy.",
+      "Transfers may still work, with limits: saving can fall back to the browser's normal Downloads folder, and a network that blocks storage hosts may stop the transfer. Check the saved location and your agency policy.",
+    unreachableHint:
+      "This computer's network could not reach the Print-cess server. Ask your IT team whether this site's address is on the agency proxy or domain allowlist.",
   },
 } as const;
 
 export default async function WorkstationPage() {
   const locale = await requestLocale();
   const text = locale === "ko" ? copy.ko : copy.en;
+  // Only promise a single-origin allowlist when this deployment can relay
+  // ciphertext; otherwise browsers still reach the storage host directly.
+  const policyItems = [
+    ...text.privacyItems,
+    relayStoreId() ? text.allowlistRelay : text.allowlistDirect,
+  ];
 
   return (
     <main className="workstation-page">
@@ -128,10 +153,14 @@ export default async function WorkstationPage() {
           webCrypto: text.webCrypto,
           fileApi: text.fileApi,
           downloadApi: text.downloadApi,
+          serviceReach: text.serviceReach,
+          sameOriginRoute: text.sameOriginRoute,
           pass: text.pass,
+          pending: text.pending,
           fail: text.fail,
           blockedHint: text.blockedHint,
           limitedHint: text.limitedHint,
+          unreachableHint: text.unreachableHint,
         }}
       />
 
@@ -177,7 +206,7 @@ export default async function WorkstationPage() {
           <h2>{text.privacyTitle}</h2>
         </div>
         <ul>
-          {text.privacyItems.map((item) => (
+          {policyItems.map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ul>

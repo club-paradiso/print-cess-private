@@ -1,7 +1,10 @@
 "use client";
 
 import { CheckCircle2, CircleAlert, LoaderCircle, ShieldAlert } from "lucide-react";
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+
+import { ApiClientError, getDropCapabilities } from "@/lib/drop-client";
+import { preferSameOriginStorageRoute } from "@/lib/drop-transfer";
 
 type Copy = {
   checking: string;
@@ -12,16 +15,25 @@ type Copy = {
   webCrypto: string;
   fileApi: string;
   downloadApi: string;
+  serviceReach: string;
+  sameOriginRoute: string;
   pass: string;
+  pending: string;
   fail: string;
   blockedHint: string;
   limitedHint: string;
+  unreachableHint: string;
 };
+
+type NetworkState =
+  | { status: "checking" }
+  | { status: "reachable"; sameOriginTransfers: boolean }
+  | { status: "unreachable" };
 
 type ReadinessCheck = {
   key: string;
   label: string;
-  ok: boolean;
+  ok: boolean | null;
   required: boolean;
 };
 
@@ -31,6 +43,7 @@ export function WorkstationReadiness({ copy }: { copy: Copy }) {
   const webCrypto = useSyncExternalStore(subscribeNever, readWebCrypto, readNotHydrated);
   const fileApi = useSyncExternalStore(subscribeNever, readFileApi, readNotHydrated);
   const downloadApi = useSyncExternalStore(subscribeNever, readDownloadApi, readNotHydrated);
+  const network = useNetworkState();
 
   if (!hydrated) {
     return (
@@ -48,34 +61,116 @@ export function WorkstationReadiness({ copy }: { copy: Copy }) {
     { key: "web-crypto", label: copy.webCrypto, ok: webCrypto, required: true },
     { key: "file-api", label: copy.fileApi, ok: fileApi, required: true },
     { key: "download-api", label: copy.downloadApi, ok: downloadApi, required: false },
+    {
+      key: "service-reach",
+      label: copy.serviceReach,
+      ok: network.status === "checking" ? null : network.status === "reachable",
+      required: true,
+    },
+    {
+      key: "same-origin-route",
+      label: copy.sameOriginRoute,
+      ok:
+        network.status === "checking"
+          ? null
+          : network.status === "reachable" && network.sameOriginTransfers,
+      required: false,
+    },
   ];
-  const requiredFailure = checks.some((check) => check.required && !check.ok);
-  const optionalFailure = checks.some((check) => !check.required && !check.ok);
-  const tone = requiredFailure ? "blocked" : optionalFailure ? "limited" : "ready";
-  const title = requiredFailure ? copy.blocked : optionalFailure ? copy.limited : copy.ready;
-  const Icon = requiredFailure ? ShieldAlert : optionalFailure ? CircleAlert : CheckCircle2;
+  const requiredFailure = checks.some((check) => check.required && check.ok === false);
+  const optionalFailure = checks.some((check) => !check.required && check.ok === false);
+  // A required check still in flight must not read as success: on a blocked
+  // network the reachability request can take its whole timeout to fail.
+  const requiredPending = checks.some((check) => check.required && check.ok === null);
+  const tone = requiredFailure
+    ? "blocked"
+    : requiredPending
+      ? "checking"
+      : optionalFailure
+        ? "limited"
+        : "ready";
+  const title = requiredFailure
+    ? copy.blocked
+    : requiredPending
+      ? copy.checking
+      : optionalFailure
+        ? copy.limited
+        : copy.ready;
+  const Icon = requiredFailure
+    ? ShieldAlert
+    : requiredPending
+      ? LoaderCircle
+      : optionalFailure
+        ? CircleAlert
+        : CheckCircle2;
 
   return (
     <section className={`workstation-readiness workstation-readiness--${tone}`} aria-live="polite">
       <div className="workstation-readiness__headline">
-        <Icon aria-hidden="true" />
+        <Icon
+          className={
+            requiredPending && !requiredFailure ? "workstation-readiness__spinner" : undefined
+          }
+          aria-hidden="true"
+        />
         <strong>{title}</strong>
       </div>
       <ul>
         {checks.map((check) => (
-          <li key={check.key} className={check.ok ? "is-pass" : "is-fail"}>
+          <li
+            key={check.key}
+            className={check.ok === null ? "is-pending" : check.ok ? "is-pass" : "is-fail"}
+          >
             <span>{check.label}</span>
-            <strong>{check.ok ? copy.pass : copy.fail}</strong>
+            <strong>{check.ok === null ? copy.pending : check.ok ? copy.pass : copy.fail}</strong>
           </li>
         ))}
       </ul>
-      {requiredFailure ? (
+      {network.status === "unreachable" ? (
+        <p>{copy.unreachableHint}</p>
+      ) : requiredFailure ? (
         <p>{copy.blockedHint}</p>
       ) : optionalFailure ? (
         <p>{copy.limitedHint}</p>
       ) : null}
     </section>
   );
+}
+
+/**
+ * Asks the deployment for its published limits. It is the cheapest request
+ * that travels the same path as a transfer — this origin's API through the
+ * agency proxy — so a green result means the proxy actually lets Print-cess
+ * through rather than only that the page itself loaded from a cache.
+ */
+function useNetworkState(): NetworkState {
+  const [state, setState] = useState<NetworkState>({ status: "checking" });
+  useEffect(() => {
+    // Anyone who starts from this page is on a work computer; send their
+    // ciphertext through this origin from the first part.
+    preferSameOriginStorageRoute();
+    const controller = new AbortController();
+    getDropCapabilities(controller.signal)
+      .then((capabilities) =>
+        setState({
+          status: "reachable",
+          sameOriginTransfers: capabilities.sameOriginTransfers === true,
+        }),
+      )
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        // Any HTTP answer — a 429 from many workstations sharing one egress
+        // address included — proves the proxy let this origin through. Only a
+        // request that never got a response means the network is blocking it.
+        setState(
+          error instanceof ApiClientError && error.status > 0
+            ? { status: "reachable", sameOriginTransfers: false }
+            : { status: "unreachable" },
+        );
+      });
+    return () => controller.abort();
+  }, []);
+  return state;
 }
 
 function subscribeNever(): () => void {

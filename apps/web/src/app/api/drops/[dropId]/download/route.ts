@@ -1,5 +1,6 @@
 import { dropDownloadRequestSchema, dropPartPath } from "@print-cess/protocol";
 
+import { relayUrlFor } from "@/server/blob-relay";
 import { ServiceError } from "@/server/errors";
 import { assertAllowedOrigin, errorResponse, json, readDropId, readJson } from "@/server/http";
 import { enforceRateLimit } from "@/server/rate-limit";
@@ -43,6 +44,7 @@ export async function POST(request: Request, context: { params: Promise<{ dropId
         index,
         method: operation.method,
         url: operation.url,
+        relayUrl: relayUrlFor(operation.url),
         headers: operation.headers,
         expiresAt: operation.expiresAt,
         size: part.size,

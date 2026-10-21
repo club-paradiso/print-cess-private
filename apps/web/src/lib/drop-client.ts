@@ -6,6 +6,11 @@ export type DropOperation = {
   index: number;
   method: "PUT" | "GET";
   url: string;
+  /**
+   * The same signed operation addressed through this origin, offered when the
+   * deployment can relay ciphertext for networks that block the storage host.
+   */
+  relayUrl?: string;
   headers: Record<string, string>;
   expiresAt: number;
   maximumSize?: number;
