@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { BatchKioskSimulator } from "@/components/kiosk/batch-kiosk-simulator";
 import { isBrowserKioskEnabled } from "@/server/demo";
-import { requestLocale } from "@/lib/request-locale";
+import { requestKioskLocale } from "@/lib/request-locale";
 
 export default async function BrowserKioskPage({
   searchParams,
@@ -14,7 +14,7 @@ export default async function BrowserKioskPage({
 }) {
   if (process.env.NODE_ENV === "production" && !isBrowserKioskEnabled()) notFound();
   const { printing, sound } = await searchParams;
-  const locale = await requestLocale();
+  const locale = await requestKioskLocale();
   // `?sound=off` for a counter where a completion tone would carry further than
   // it helps. The screen says the same thing either way.
   return (
