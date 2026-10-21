@@ -14,5 +14,9 @@ export default async function BrowserKioskPage({
   const locale = await requestLocale();
   // `?sound=off` for a counter where a completion tone would carry further than
   // it helps. The screen says the same thing either way.
-  return <BatchKioskSimulator automaticPrinting={printing === "auto"} sound={sound !== "off"} initialLocale={locale} />;
+  return <BatchKioskSimulator
+      automaticPrinting={printing === "auto"}
+      sound={sound !== "off"}
+      initialLocale={locale}
+    />;
 }
