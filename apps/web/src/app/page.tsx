@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { BatchKioskSimulator } from "@/components/kiosk/batch-kiosk-simulator";
 import { isBrowserKioskEnabled } from "@/server/demo";
+import { requestLocale } from "@/lib/request-locale";
 
 /**
  * The main page is the shared display: the print QR code first, and in its
@@ -20,7 +21,8 @@ export default async function RootPage({
 }) {
   if (process.env.NODE_ENV === "production" && !isBrowserKioskEnabled()) redirect("/start");
   const { printing, sound } = await searchParams;
+  const locale = await requestLocale();
   return (
-    <BatchKioskSimulator automaticPrinting={printing === "auto"} sound={sound !== "off"} services />
+    <BatchKioskSimulator automaticPrinting={printing === "auto"} sound={sound !== "off"} services initialLocale={locale} />
   );
 }
