@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { acceptLanguage } = vi.hoisted(() => ({ acceptLanguage: { value: "" } }));
 
@@ -49,5 +49,26 @@ describe("workstation page", () => {
     expect(copy).toContain("설치 없이, 업무용 브라우저에서 바로 사용");
     expect(copy).toContain("기관 보안정책을 우회하지 않습니다");
     expect(copy).toContain("Internet Explorer 모드나 오래된 브라우저는 지원 대상이 아닙니다");
+  });
+
+  describe("allowlist guidance", () => {
+    afterEach(() => vi.unstubAllEnvs());
+
+    it("promises a single-origin allowlist only when the deployment can relay", async () => {
+      acceptLanguage.value = "en-US";
+      vi.stubEnv(
+        "BLOB_READ_WRITE_TOKEN",
+        ["vercel", "blob", "rw", "Store1", "synthetic"].join("_"),
+      );
+      expect(textOf(await WorkstationPage())).toContain("request only this site's address");
+    });
+
+    it("asks for the storage address too when transfers go to storage directly", async () => {
+      acceptLanguage.value = "en-US";
+      vi.stubEnv("BLOB_READ_WRITE_TOKEN", "");
+      const copy = textOf(await WorkstationPage());
+      expect(copy).not.toContain("request only this site's address");
+      expect(copy).toContain("the file storage address too");
+    });
   });
 });

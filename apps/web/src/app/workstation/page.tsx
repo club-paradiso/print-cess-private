@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Wordmark } from "@print-cess/ui";
 
 import { requestLocale } from "@/lib/request-locale";
+import { relayStoreId } from "@/server/blob-relay";
 
 import { WorkstationReadiness } from "./workstation-readiness";
 
@@ -39,8 +40,11 @@ const copy = {
       "전송 파일은 종단간 암호화되며, 서비스는 파일 내용을 해독하지 않도록 설계되어 있습니다.",
       "전송이 끝나면 받은 파일이 올바른 위치에 저장됐는지 확인하고 필요하면 전송을 즉시 삭제하세요.",
       "Internet Explorer 모드나 오래된 브라우저는 지원 대상이 아닙니다. 최신 Microsoft Edge 또는 Chrome 계열 브라우저를 권장합니다.",
-      "기관에서 허용 도메인을 등록해야 한다면 이 사이트 주소 하나만 요청하면 됩니다. 파일은 별도 저장소 주소가 아닌 이 주소를 거쳐 전송됩니다.",
     ],
+    allowlistRelay:
+      "기관에서 허용 도메인을 등록해야 한다면 이 사이트 주소 하나만 요청하면 됩니다. 파일은 별도 저장소 주소가 아닌 이 주소를 거쳐 전송됩니다.",
+    allowlistDirect:
+      "기관에서 허용 도메인을 등록해야 한다면 이 사이트 주소와 함께 파일 저장소 주소도 허용해야 합니다. 저장소 주소는 이 서비스 운영자에게 확인하세요.",
     back: "처음으로",
     checking: "이 PC의 브라우저 호환성을 확인하는 중…",
     ready: "이 PC에서 핵심 기능을 사용할 수 있습니다",
@@ -84,8 +88,11 @@ const copy = {
       "Transfer payloads are end-to-end encrypted and the service is designed not to decrypt file contents.",
       "After receiving files, confirm where the browser saved them and delete the transfer immediately when appropriate.",
       "Internet Explorer mode and obsolete browsers are not supported. A current Microsoft Edge or Chromium-based browser is recommended.",
-      "If your agency must allowlist domains, request only this site's address. Files travel through it rather than through a separate storage host.",
     ],
+    allowlistRelay:
+      "If your agency must allowlist domains, request only this site's address. Files travel through it rather than through a separate storage host.",
+    allowlistDirect:
+      "If your agency must allowlist domains, request this site's address and the file storage address too. Ask the operator of this service for the storage address.",
     back: "Back to start",
     checking: "Checking this browser for work-computer compatibility…",
     ready: "This browser supports the core transfer flow",
@@ -112,6 +119,12 @@ const copy = {
 export default async function WorkstationPage() {
   const locale = await requestLocale();
   const text = locale === "ko" ? copy.ko : copy.en;
+  // Only promise a single-origin allowlist when this deployment can relay
+  // ciphertext; otherwise browsers still reach the storage host directly.
+  const policyItems = [
+    ...text.privacyItems,
+    relayStoreId() ? text.allowlistRelay : text.allowlistDirect,
+  ];
 
   return (
     <main className="workstation-page">
@@ -193,7 +206,7 @@ export default async function WorkstationPage() {
           <h2>{text.privacyTitle}</h2>
         </div>
         <ul>
-          {text.privacyItems.map((item) => (
+          {policyItems.map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ul>

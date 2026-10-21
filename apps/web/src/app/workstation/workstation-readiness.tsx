@@ -3,7 +3,7 @@
 import { CheckCircle2, CircleAlert, LoaderCircle, ShieldAlert } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { getDropCapabilities } from "@/lib/drop-client";
+import { ApiClientError, getDropCapabilities } from "@/lib/drop-client";
 import { preferSameOriginStorageRoute } from "@/lib/drop-transfer";
 
 type Copy = {
@@ -79,14 +79,40 @@ export function WorkstationReadiness({ copy }: { copy: Copy }) {
   ];
   const requiredFailure = checks.some((check) => check.required && check.ok === false);
   const optionalFailure = checks.some((check) => !check.required && check.ok === false);
-  const tone = requiredFailure ? "blocked" : optionalFailure ? "limited" : "ready";
-  const title = requiredFailure ? copy.blocked : optionalFailure ? copy.limited : copy.ready;
-  const Icon = requiredFailure ? ShieldAlert : optionalFailure ? CircleAlert : CheckCircle2;
+  // A required check still in flight must not read as success: on a blocked
+  // network the reachability request can take its whole timeout to fail.
+  const requiredPending = checks.some((check) => check.required && check.ok === null);
+  const tone = requiredFailure
+    ? "blocked"
+    : requiredPending
+      ? "checking"
+      : optionalFailure
+        ? "limited"
+        : "ready";
+  const title = requiredFailure
+    ? copy.blocked
+    : requiredPending
+      ? copy.checking
+      : optionalFailure
+        ? copy.limited
+        : copy.ready;
+  const Icon = requiredFailure
+    ? ShieldAlert
+    : requiredPending
+      ? LoaderCircle
+      : optionalFailure
+        ? CircleAlert
+        : CheckCircle2;
 
   return (
     <section className={`workstation-readiness workstation-readiness--${tone}`} aria-live="polite">
       <div className="workstation-readiness__headline">
-        <Icon aria-hidden="true" />
+        <Icon
+          className={
+            requiredPending && !requiredFailure ? "workstation-readiness__spinner" : undefined
+          }
+          aria-hidden="true"
+        />
         <strong>{title}</strong>
       </div>
       <ul>
@@ -131,8 +157,16 @@ function useNetworkState(): NetworkState {
           sameOriginTransfers: capabilities.sameOriginTransfers === true,
         }),
       )
-      .catch(() => {
-        if (!controller.signal.aborted) setState({ status: "unreachable" });
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        // Any HTTP answer — a 429 from many workstations sharing one egress
+        // address included — proves the proxy let this origin through. Only a
+        // request that never got a response means the network is blocking it.
+        setState(
+          error instanceof ApiClientError && error.status > 0
+            ? { status: "reachable", sameOriginTransfers: false }
+            : { status: "unreachable" },
+        );
       });
     return () => controller.abort();
   }, []);
