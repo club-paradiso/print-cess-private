@@ -1,3 +1,13 @@
+/**
+ * Removes everything this origin could be holding in the visitor's browser once
+ * printing is finished.
+ *
+ * This reaches our own origin only. A page cannot erase the browser's history,
+ * cannot quit the browser, and cannot touch another site's data — see the
+ * "Shutting the visitor's page down" section of `docs/PRIVACY.md` for the
+ * honest boundary. Every step is best effort: a browser that refuses one of
+ * them must not stop the visitor from reaching the finished screen.
+ */
 export async function clearBrowserSiteData(): Promise<void> {
   await Promise.allSettled([
     clearWebStorage(),
@@ -7,6 +17,11 @@ export async function clearBrowserSiteData(): Promise<void> {
     expireCookies(),
   ]);
 
+  // Asks the browser to drop this origin's cache, cookies and storage as well,
+  // which reaches copies the page itself cannot see. `executionContexts` is
+  // deliberately absent: it would reload this browsing context, dropping the
+  // visitor back onto a finished session and showing an error instead of the
+  // confirmation that printing is done.
   await fetch("/api/session-end", {
     method: "POST",
     cache: "no-store",
@@ -32,6 +47,9 @@ async function clearCacheStorage(): Promise<void> {
 async function clearIndexedDatabases(): Promise<void> {
   if (typeof indexedDB === "undefined") return;
   await run(async () => {
+    // `databases()` is unavailable on Safari, where there is no way to
+    // enumerate them. The application stores nothing here in the first place;
+    // this clears anything a dependency may have left behind.
     const databases = await indexedDB.databases?.();
     if (!databases) return;
     await Promise.allSettled(
@@ -74,5 +92,6 @@ async function run(step: () => void | Promise<void>): Promise<void> {
   try {
     await step();
   } catch {
+    // A browser that refuses one step still gets the others.
   }
 }

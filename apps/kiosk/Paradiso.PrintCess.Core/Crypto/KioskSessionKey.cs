@@ -66,6 +66,9 @@ public sealed class KioskSessionKey : IDisposable
         }
         catch (PlatformNotSupportedException exception) when (exception.InnerException is CryptographicException)
         {
+            // Windows CNG reports an off-curve peer point as PlatformNotSupportedException,
+            // while OpenSSL reports CryptographicException. Normalize the invalid input so
+            // callers classify the tampered envelope consistently on both platforms.
             throw new CryptographicException("Invalid uncompressed P-256 public key.", exception);
         }
 

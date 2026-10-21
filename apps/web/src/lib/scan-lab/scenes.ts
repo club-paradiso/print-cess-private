@@ -1,8 +1,24 @@
 import type { DocumentQuad, ScanPoint } from "@/lib/document-scan-engine";
 
+/**
+ * Synthetic photographs of a document with a known answer.
+ *
+ * Each scene places an A4 sheet in 3D in front of a pinhole camera, so the
+ * corners the scanner should find, and the page's true proportions, are exact
+ * rather than hand-annotated. The sheet carries text-like lines and a table so
+ * edge detection has to tell the page outline from its contents, and the scene
+ * adds the things that break real scans: busy or low-contrast desks, shadows,
+ * glare, low light, motion blur, sensor noise, clutter, a page that is too far
+ * away or cut off by the frame, and no page at all.
+ *
+ * Everything is drawn from a fixed seed, so a run is reproducible in CI. A pass
+ * here is evidence about the pipeline on synthetic scenes only; it is not a
+ * real-device result (see benchmarks/scanner/README.md).
+ */
 
 export const A4_ASPECT = 210 / 297;
 
+/** Source photo size: a 3:4 portrait phone frame. */
 export const SCENE_WIDTH = 1512;
 export const SCENE_HEIGHT = 2016;
 
@@ -10,8 +26,10 @@ export type SceneBackground = "wood" | "gray-desk" | "beige" | "cloth" | "dark";
 
 export type ScanLabScene = {
   id: string;
+  /** What the scene is testing, in a few words. */
   label: string;
   background: SceneBackground;
+  /** Camera pose relative to the sheet, in degrees, and distance in sheet heights. */
   pose: {
     pitch: number;
     yaw: number;
@@ -19,16 +37,25 @@ export type ScanLabScene = {
     distance: number;
     offsetX?: number;
     offsetY?: number;
+    /** Focal length as a multiple of the frame's long edge; 1.15 when omitted. */
     focal?: number;
   };
+  /** Draw no sheet at all (an empty desk). */
   empty?: boolean;
   clutter?: boolean;
+  /** Linear shadow across the frame, 0 (none) to 1 (black edge). */
   shadow?: number;
+  /** A clipped specular highlight on the sheet, as a fraction of the frame width. */
   glare?: number;
+  /** Overall exposure multiplier, 1 = normal. */
   exposure?: number;
+  /** Gaussian blur radius in source pixels (motion/focus blur). */
   blur?: number;
+  /** Per-pixel sensor noise amplitude, 0–255. */
   noise?: number;
+  /** What a correct scanner does with this scene. */
   expect: {
+    /** `true`: must find the sheet; `false`: must not claim one; `null`: either is acceptable. */
     detect: boolean | null;
     autoCapture: boolean;
   };
@@ -160,7 +187,9 @@ export const SCAN_LAB_SCENES: readonly ScanLabScene[] = [
 
 export type RenderedScene = {
   canvas: HTMLCanvasElement;
+  /** The sheet's true corners, normalized, top-left first; null when no sheet is drawn. */
   quad: DocumentQuad | null;
+  /** True when every corner of the sheet is inside the frame. */
   fullyInFrame: boolean;
 };
 
@@ -186,6 +215,7 @@ function seedOf(id: string): number {
   return hash >>> 0;
 }
 
+/** Unit square (u, v) to an image quadrilateral (TL, TR, BR, BL), Heckbert's closed form. */
 function squareToQuad(quad: readonly ScanPoint[]): Homography {
   const [p0, p1, p2, p3] = quad as [ScanPoint, ScanPoint, ScanPoint, ScanPoint];
   const sx = p0.x - p1.x + p2.x - p3.x;
@@ -217,6 +247,7 @@ function mapPoint([a, b, c, d, e, f, g, h]: Homography, u: number, v: number): S
   return { x: (a * u + b * v + c) / w, y: (d * u + e * v + f) / w };
 }
 
+/** The sheet's corners in pixels, projected through a pinhole camera. */
 export function projectSheet(scene: ScanLabScene): ScanPoint[] {
   const rad = Math.PI / 180;
   const pitch = scene.pose.pitch * rad;
@@ -237,13 +268,16 @@ export function projectSheet(scene: ScanLabScene): ScanPoint[] {
   ] as const;
 
   return corners.map(([x0, y0]) => {
+    // Roll the sheet in its own plane, then tilt it away from the camera.
     let x = x0 * Math.cos(roll) - y0 * Math.sin(roll);
     let y = x0 * Math.sin(roll) + y0 * Math.cos(roll);
     let z = 0;
+    // Pitch about the x axis.
     const y1 = y * Math.cos(pitch) - z * Math.sin(pitch);
     const z1 = y * Math.sin(pitch) + z * Math.cos(pitch);
     y = y1;
     z = z1;
+    // Yaw about the y axis.
     const x2 = x * Math.cos(yaw) + z * Math.sin(yaw);
     const z2 = -x * Math.sin(yaw) + z * Math.cos(yaw);
     x = x2 + offsetX;
@@ -324,6 +358,8 @@ function drawClutter(
   const centerX = avoid ? avoid.reduce((sum, point) => sum + point.x, 0) / 4 : width / 2;
   const centerY = avoid ? avoid.reduce((sum, point) => sum + point.y, 0) / 4 : height / 2;
   for (let index = 0; index < 7; index += 1) {
+    // Keep objects near the frame edges, as on a real desk, so they sit beside
+    // the page rather than on it.
     const side = index % 4;
     const x =
       side === 0
@@ -358,6 +394,7 @@ function drawSheet(context: CanvasRenderingContext2D, corners: ScanPoint[], rand
     mapPoint(homography, u0, v1),
   ];
 
+  // A soft contact shadow under the sheet.
   context.save();
   context.filter = "blur(10px)";
   context.fillStyle = "rgba(0,0,0,0.35)";
@@ -367,6 +404,7 @@ function drawSheet(context: CanvasRenderingContext2D, corners: ScanPoint[], rand
   );
   context.restore();
 
+  // Paper, very slightly warmer at one end, as under a desk lamp.
   const paper = context.createLinearGradient(
     corners[0]!.x,
     corners[0]!.y,
@@ -378,12 +416,14 @@ function drawSheet(context: CanvasRenderingContext2D, corners: ScanPoint[], rand
   context.fillStyle = paper;
   fillQuad(context, corners);
 
+  // Content stays inside an 8% margin, so the page edge itself is clean paper.
   context.fillStyle = "#23262d";
   fillQuad(context, quadAt(0.1, 0.07, 0.52, 0.1));
   context.fillStyle = "#3a3f48";
   for (let v = 0.15; v < 0.5; v += 0.026) {
     fillQuad(context, quadAt(0.1, v, 0.1 + 0.48 + random() * 0.34, v + 0.0085));
   }
+  // A small table, whose straight lines compete with the page outline.
   context.fillStyle = "#4b5160";
   const top = 0.55;
   const bottom = 0.74;

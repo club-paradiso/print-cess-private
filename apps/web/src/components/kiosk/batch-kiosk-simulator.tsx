@@ -50,8 +50,14 @@ type RegisteredSession = {
   fingerprint: string;
 };
 
+/** The outcome of getting one QR code onto the screen. */
 type PreparedSession = { ok: true; session: RegisteredSession } | { ok: false };
 
+/**
+ * Mints one print session and renders its QR code. Kept out of the effect body
+ * so that the promise it returns can be reused rather than the work repeated:
+ * every call here consumes a session from the per-counter creation limit.
+ */
 async function prepareSession(): Promise<PreparedSession> {
   try {
     const keyPair = await generateEcdhKeyPair();
@@ -95,11 +101,14 @@ export function BatchKioskSimulator({
 }: {
   automaticPrinting?: boolean;
   sound?: boolean;
+  /** Show links to the other features (the main page only). */
   services?: boolean;
 }) {
   const [session, setSession] = useState<RegisteredSession>();
   const [status, setStatus] = useState<KioskStatus>("preparing");
   const [remaining, setRemaining] = useState(120);
+  // How long this QR code lived when it appeared, so the bar under it can show
+  // the time left as a share of the whole rather than as a bare number.
   const [sessionLifetime, setSessionLifetime] = useState(120);
   const [completionRemaining, setCompletionRemaining] = useState(60);
   const [artifacts, setArtifacts] = useState<PrintArtifact[]>([]);
@@ -134,6 +143,10 @@ export function BatchKioskSimulator({
 
   useEffect(() => {
     let active = true;
+    // Registering a session mints server-side state and counts against the
+    // per-counter creation limit, so it is started once per QR generation.
+    // React runs an effect twice in development; without this the screen would
+    // quietly burn two sessions every time it opened and abandon the first.
     if (preparation.current?.generation !== generation) {
       preparation.current = { generation, ready: prepareSession() };
     }
@@ -202,6 +215,7 @@ export function BatchKioskSimulator({
             if (active && sound) playCompletionTone();
           }
         } catch {
+          // A transient status read does not rewrite the kiosk's known state.
         }
       })();
     }, 750);
@@ -315,10 +329,17 @@ async function consumeValidateAndPrint(
     setArtifacts(nextArtifacts);
     setStatus("printing");
     await kioskTransition(session, "printing");
+    // `window.print()` blocks until its dialog is dismissed in the supported
+    // desktop browsers, so this naturally walks the selected documents in order.
+    // Every document loads before the first dialog opens, so a document that
+    // cannot load fails the session with nothing printed, and a resend never
+    // duplicates pages.
     await printArtifacts(nextArtifacts);
     await kioskTransition(session, "completed");
     setStatus("completed");
   } catch {
+    // The failure screen offers no reprint or download, so the decrypted Blob
+    // is released now instead of when the next QR code is created.
     setArtifacts([]);
     setStatus("failed");
     await kioskTransition(session, "failed").catch(() => undefined);

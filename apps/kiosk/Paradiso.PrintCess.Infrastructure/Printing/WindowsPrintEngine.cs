@@ -169,6 +169,9 @@ public sealed class WindowsPrintEngine : IPrintEngine
             {
                 var writer = PrintQueue.CreateXpsDocumentWriter(queue);
                 submissionStarted = true;
+                // A multi-file selection is intentionally rendered into one
+                // FixedDocument. The spooler therefore receives one guarded job
+                // containing all pages, in the exact order selected on the phone.
                 writer.Write(fixedDocument.DocumentPaginator, ticket);
                 return PrintResult.Submitted();
             }

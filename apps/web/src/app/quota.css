@@ -1,3 +1,11 @@
+/*
+ * Print quota screens: the Print-cess+ paywall and the technical-ceiling panel.
+ *
+ * The visual target is a real subscription page, because the joke only lands if
+ * the screen looks like it was built by a company that means it. Everything
+ * that carries information — the page counts, the disclaimer, the way out —
+ * is sized and contrasted as if this were a serious error state, which it is.
+ */
 
 .quota-overlay {
   position: fixed;
@@ -48,6 +56,7 @@
   }
 }
 
+/* ---------- shared summary ---------- */
 
 .quota-summary {
   display: grid;
@@ -81,6 +90,7 @@
   line-height: 1.1;
 }
 
+/* ---------- paywall ---------- */
 
 .quota-paywall__head {
   text-align: center;
@@ -117,6 +127,7 @@
   font-weight: 600;
 }
 
+/* ---------- pricing ---------- */
 
 .quota-plans {
   display: grid;
@@ -183,6 +194,7 @@
   font-size: 0.875rem;
 }
 
+/* ---------- comparison ---------- */
 
 .quota-compare {
   width: 100%;
@@ -214,6 +226,7 @@
   text-align: end;
 }
 
+/* ---------- call to action ---------- */
 
 .quota-cta {
   display: flex;
@@ -272,6 +285,7 @@
   font-size: 0.9375rem;
 }
 
+/* ---------- disclaimer and staff ---------- */
 
 .quota-disclaimer {
   margin: 14px 0 0;
@@ -311,6 +325,7 @@
   line-height: 1.5;
 }
 
+/* ---------- hard limit ---------- */
 
 .quota-hard {
   text-align: center;
@@ -343,6 +358,7 @@
   font-size: 0.8125rem;
 }
 
+/* ---------- actions ---------- */
 
 .quota-actions {
   display: grid;
@@ -350,6 +366,7 @@
   margin: 20px 0 0;
 }
 
+/* ---------- inline notices in the flow ---------- */
 
 .quota-notice {
   display: flex;

@@ -5,7 +5,14 @@ import { isHwpxSelection, validateHwpxHeader } from "./hwpx-validation";
 export type ValidatedMobileFile = {
   bytes: Uint8Array;
   fileKind: FileKind;
+  /** Exact for PDFs and images. A floor when `pageCountIsExact` is false. */
   pageCount: number;
+  /**
+   * False for HWP and HWPX: Hangul decides their pagination while rendering,
+   * and only the kiosk runs Hangul. Counting them as one page would let a
+   * fifty-page document through the free limit, so the quota carries the
+   * uncertainty instead of hiding it.
+   */
   pageCountIsExact: boolean;
   width?: number;
   height?: number;
@@ -175,6 +182,12 @@ export async function validateFileForMobile(
 
 const FILE_READ_RETRY_DELAYS_MS = [0, 120, 360] as const;
 
+/**
+ * iOS Safari can hand a File backed by iCloud Drive to the page before the
+ * provider is ready to serve its bytes. A single arrayBuffer() failure is not
+ * proof that the document is corrupt. Retry briefly and fall back to
+ * FileReader, which uses a different WebKit read path on older/iOS builds.
+ */
 export async function readSelectedFileBytes(file: File): Promise<Uint8Array> {
   for (const delayMs of FILE_READ_RETRY_DELAYS_MS) {
     if (delayMs > 0) await waitForFileProvider(delayMs);
@@ -183,6 +196,7 @@ export async function readSelectedFileBytes(file: File): Promise<Uint8Array> {
       const bytes = new Uint8Array(await file.arrayBuffer());
       if (bytes.byteLength > 0) return bytes;
     } catch {
+      // Try FileReader below, then give the provider a moment before retrying.
     }
 
     if (typeof FileReader !== "undefined") {
@@ -190,6 +204,8 @@ export async function readSelectedFileBytes(file: File): Promise<Uint8Array> {
         const bytes = new Uint8Array(await readWithFileReader(file));
         if (bytes.byteLength > 0) return bytes;
       } catch {
+        // Continue to the next attempt. Do not label a transient provider read
+        // failure as a corrupt file until every local read path has failed.
       }
     }
   }
@@ -225,6 +241,9 @@ export async function validatePdf(
   options: { skipActiveContentScan?: boolean } = {},
 ): Promise<number> {
   const searchable = new TextDecoder("latin1").decode(bytes);
+  // PDF names may hex-escape any character, so `/J#61vaScript` names the same
+  // key as `/JavaScript`. Scan the decoded form too, or the marker check below
+  // is bypassed by an author who only has to escape one letter.
   const decodedNames = decodePdfNameEscapes(searchable);
   if (searchable.includes("/Encrypt") || decodedNames.includes("/Encrypt"))
     throw new FileValidationError("lockedPdf");
@@ -380,6 +399,7 @@ async function decodeBrowserImage(file: Blob): Promise<{
         dispose: () => bitmap.close(),
       };
     } catch {
+      // Fall back to the browser image element for formats it decodes there.
     }
   }
 
@@ -460,6 +480,11 @@ export function decodedDimensionsMatch(
   decoded: { width: number; height: number },
 ): boolean {
   if (decoded.width === expected.width && decoded.height === expected.height) return true;
+  // The decode below asks for the EXIF orientation to be applied, and a photo
+  // taken sideways — most photos in a phone gallery — then reports its axes
+  // swapped relative to the width and height stored in the file. That is a
+  // valid, printable photograph, not a damaged one. Browsers also disagree
+  // about honouring the orientation request at all, so accept both forms.
   return decoded.width === expected.height && decoded.height === expected.width;
 }
 
@@ -485,6 +510,8 @@ function decodePdfNameEscapes(source: string): string {
   if (!source.includes("#")) return source;
   return source.replaceAll(/#([0-9a-fA-F]{2})/gu, (match, hex: string) => {
     const code = Number.parseInt(hex, 16);
+    // `#00` is not a legal name character, so leave the sequence untouched
+    // rather than inventing a NUL that the real parser would reject.
     return code === 0 ? match : String.fromCharCode(code);
   });
 }

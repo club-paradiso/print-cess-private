@@ -16,6 +16,7 @@ export class InProcessCleanupScheduler implements CleanupScheduler {
       if (scheduled?.timer !== timer) return;
       this.#scheduled.delete(sessionId);
       void this.onDue(sessionId).catch(() => {
+        // Local development keeps TTL cleanup as the final fallback.
       });
     }, delay);
     this.#scheduled.set(sessionId, { dueAt, timer });

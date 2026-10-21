@@ -1,6 +1,17 @@
 // @vitest-environment jsdom
+// The scanner is camera and DOM glue, so it can only be exercised where a
+// document, a video element and a script tag exist.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+/**
+ * Which decoder reads the camera, and what a visitor is told when none can.
+ *
+ * Safari on iOS has no BarcodeDetector. Before the jsQR fallback, every iPhone
+ * that tapped "Scan QR code" on the home page was told it could not scan. The
+ * cases here pin the three outcomes apart: native decoding, the fallback, and
+ * an honest "unavailable" when the fallback cannot load, which must not be
+ * reported as a refused camera.
+ */
 
 type Scope = typeof globalThis & { BarcodeDetector?: unknown; jsQR?: unknown };
 const scope = globalThis as Scope;
@@ -115,6 +126,7 @@ describe("startCodeScanner", () => {
     await vi.advanceTimersByTimeAsync(250);
 
     await expect(scanner.codes).resolves.toBe("fallback");
+    // A 1920x1080 frame is scaled so its long side is 960.
     expect(seen[0]).toEqual([960, 540]);
     expect(drawImage).toHaveBeenCalled();
     expect(track.stop).toHaveBeenCalled();
@@ -168,10 +180,13 @@ describe("startCodeScanner", () => {
     const starting = startCodeScanner(video, (raw) => raw);
     const outcome = expect(starting).rejects.toMatchObject({ code: "scannerUnavailable" });
     await vi.waitFor(() => expect(pendingScript()).not.toBeNull());
+    // The decoder loads before the camera opens, so a stalled download can
+    // never leave the camera on with nothing able to stop it.
     expect(getUserMedia).not.toHaveBeenCalled();
     pendingScript()!.dispatchEvent(new Event("error"));
     await outcome;
 
+    // The camera was never opened, and the failed tag is gone so a retry can load again.
     expect(getUserMedia).not.toHaveBeenCalled();
     expect(video.srcObject ?? null).toBeNull();
     expect(pendingScript()).toBeNull();

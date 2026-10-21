@@ -27,12 +27,19 @@ export function defaultDeps(): WorkerDeps {
     fetchImpl: (...args) => fetch(...args),
     sleep: abortableSleep,
     log: (event) => {
+      // Only counts and a coarse status/reason are emitted — never the secret,
+      // the endpoint, request bodies, or response bodies.
       process.stdout.write(`${JSON.stringify({ ts: new Date().toISOString(), ...event })}\n`);
     },
     random: Math.random,
   };
 }
 
+/**
+ * Perform exactly one cleanup sweep. Never throws for expected transport
+ * failures; instead returns a structured, credential-free outcome so the caller
+ * decides whether to back off. A non-2xx response is treated as a failure.
+ */
 export async function sweepOnce(config: WorkerConfig, deps: WorkerDeps): Promise<SweepOutcome> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), config.requestTimeoutMs);
@@ -63,6 +70,13 @@ export async function sweepOnce(config: WorkerConfig, deps: WorkerDeps): Promise
   }
 }
 
+/**
+ * Run the sweep loop until `signal` aborts. Each iteration fully completes
+ * before the next begins (no overlapping polls). Successful cycles wait the
+ * configured interval; failures wait an exponential backoff with jitter capped
+ * at `maxBackoffMs`, so a persistently failing endpoint cannot become a tight
+ * crash loop that fights Railway's restart policy.
+ */
 export async function runWorker(
   config: WorkerConfig,
   deps: WorkerDeps,
@@ -87,6 +101,8 @@ export async function runWorker(
 function backoffWithJitter(attempt: number, config: WorkerConfig, deps: WorkerDeps): number {
   const base = Math.min(config.maxBackoffMs, config.intervalMs * 2 ** Math.min(attempt, 20));
   const capped = Math.min(config.maxBackoffMs, base);
+  // Full jitter in [capped/2, capped] keeps retries from synchronizing across
+  // multiple worker instances while respecting the cap.
   return Math.round(capped / 2 + deps.random() * (capped / 2));
 }
 
@@ -95,6 +111,7 @@ async function waitOrStop(ms: number, deps: WorkerDeps, signal: AbortSignal): Pr
   try {
     await deps.sleep(ms, signal);
   } catch {
+    // An aborted sleep simply ends the loop on the next guard.
   }
 }
 

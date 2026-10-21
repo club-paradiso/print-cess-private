@@ -194,6 +194,7 @@ internal sealed class KioskRuntimeCoordinator : IKioskAdminRuntime
             }
             catch (ObjectDisposedException)
             {
+                // A concurrently completed waiting session already disposed its cancellation source.
             }
 
             var cleanupConfirmed = registration is null || await TryCancelAsync(registration);
@@ -244,6 +245,7 @@ internal sealed class KioskRuntimeCoordinator : IKioskAdminRuntime
         }
         catch (ObjectDisposedException)
         {
+            // A concurrently completed session already disposed its cancellation source.
         }
 
         var cleanupConfirmed = registration is null || await TryFinishFailedAsync(registration, consumed);
@@ -317,6 +319,7 @@ internal sealed class KioskRuntimeCoordinator : IKioskAdminRuntime
             }
             catch (Exception exception) when (exception is KioskApiException or OperationCanceledException)
             {
+                // Server TTL/QStash remains the bounded cleanup fallback during shutdown.
             }
         }
 
@@ -568,6 +571,7 @@ internal sealed class KioskRuntimeCoordinator : IKioskAdminRuntime
             }
             catch (KioskApiException)
             {
+                // The spooler accepted the guarded job. Server TTL/QStash remain the cleanup fallback.
                 cleanupConfirmed = false;
             }
 
@@ -604,6 +608,7 @@ internal sealed class KioskRuntimeCoordinator : IKioskAdminRuntime
         }
         catch (Exception exception) when (exception is KioskApiException or OperationCanceledException)
         {
+            // Explicit cleanup failed; server-side delayed cleanup and TTL remain in force.
             return false;
         }
     }
@@ -619,6 +624,7 @@ internal sealed class KioskRuntimeCoordinator : IKioskAdminRuntime
         }
         catch (Exception exception) when (exception is KioskApiException or OperationCanceledException)
         {
+            // Server-side delayed cleanup and TTL remain in force.
             return false;
         }
     }

@@ -34,6 +34,12 @@ import { Beacon, ScanFrame, Wordmark } from "@print-cess/ui";
 
 import { printArtifact, type PrintArtifact } from "@/lib/kiosk-print";
 
+/**
+ * The screens of the shared display, shared by the routed browser kiosk
+ * (`/kiosk`, several files per visit) and the single-file demo kiosk, so both
+ * look and read the same. They only draw; the session, the crypto and the
+ * printing stay in the simulators that own them.
+ */
 
 export type KioskStatus =
   | "preparing"
@@ -46,11 +52,19 @@ export type KioskStatus =
   | "completed"
   | "failed";
 
+// Korean and English stay on screen permanently; the remaining languages take
+// turns on one line so a visitor sees the same instruction in their own
+// language without the display filling up with text.
 const SPOTLIGHT_LOCALES: readonly SupportedLocale[] = SUPPORTED_LOCALES.filter(
   (locale) => locale !== "ko" && locale !== "en",
 );
 const SPOTLIGHT_INTERVAL_MS = 4500;
 
+/**
+ * Everything else the service does, for the main page. Printing starts at the
+ * QR code; these are the other doors, so nobody who came to send a file or
+ * scan a page has to know another address.
+ */
 const SERVICES: { href: string; korean: string; english: string; icon: typeof Send }[] = [
   { href: "/send", korean: "파일 보내기", english: "Send files", icon: Send },
   { href: "/receive", korean: "파일 받기", english: "Receive files", icon: ArrowDownToLine },
@@ -59,6 +73,7 @@ const SERVICES: { href: string; korean: string; english: string; icon: typeof Se
   { href: "/start", korean: "이용 안내", english: "How it works", icon: CircleHelp },
 ];
 
+/** The waiting screen: one instruction, the whole visit, and the code. */
 export function KioskWaitingScreen({
   status,
   session,
@@ -70,8 +85,15 @@ export function KioskWaitingScreen({
   status: KioskStatus;
   session?: { qrUrl: string; qrImage: string } | undefined;
   remaining: number;
+  /** Seconds the current QR code had when it appeared. */
   lifetime: number;
+  /** How many files one visit may print; omitted for the one-file kiosk. */
   maxFiles?: number;
+  /**
+   * Show the links to the service's other features. On for the main page;
+   * off for `/kiosk`, the station URL, where a tap away would leave the
+   * printer's screen without its QR code.
+   */
   services?: boolean;
 }) {
   const [spotlightIndex, setSpotlightIndex] = useState(0);
@@ -215,6 +237,10 @@ export function KioskWaitingScreen({
         <section
           className="kiosk-qr"
           aria-label="휴대전화로 스캔할 QR코드"
+          // The QR URL carries the one-time upload token and key fingerprint.
+          // End-to-end tests need to read it, but a Production kiosk must not
+          // publish it as page text where a DOM snapshot or an extension could
+          // pick it up; the QR image alone is enough there.
           data-session-url={process.env.NODE_ENV === "production" ? undefined : session?.qrUrl}
         >
           <p className="kiosk-qr__instruction">
@@ -282,6 +308,12 @@ export function KioskWaitingScreen({
   );
 }
 
+/**
+ * The stations the files pass through, as the kiosk sees them. Each one maps
+ * to a state the protocol actually has, so a step lights up only because the
+ * session reached it: what the room sees and what the service knows cannot
+ * drift apart.
+ */
 const JOURNEY: {
   status: KioskStatus;
   korean: string;
@@ -303,6 +335,11 @@ const JOURNEY_ORDER: KioskStatus[] = [
   "completed",
 ];
 
+/**
+ * What the room should do at each stage, in one sentence. The visitor is
+ * either looking at their phone or waiting at the printer; the screen says
+ * which, so nobody stands in front of it wondering whether it is their turn.
+ */
 function connectedCopy(status: KioskStatus): {
   headline: string;
   english: string;
@@ -329,6 +366,10 @@ function connectedCopy(status: KioskStatus): {
   };
 }
 
+/**
+ * What the shared screen shows while the work is happening on somebody's
+ * phone: a category and a stage, never a file name, a count, or a thumbnail.
+ */
 export function ConnectedScreen({ status, remaining }: { status: KioskStatus; remaining: number }) {
   const reached = JOURNEY_ORDER.indexOf(status);
   const copy = connectedCopy(status);
@@ -359,6 +400,8 @@ export function ConnectedScreen({ status, remaining }: { status: KioskStatus; re
         <ol className="kiosk-journey">
           {JOURNEY.map((step, index) => {
             const at = JOURNEY_ORDER.indexOf(step.status);
+            // "uploaded" sits between arriving and checking; it is still the
+            // arriving stage as far as the room is concerned.
             const effective = status === "uploaded" ? JOURNEY_ORDER.indexOf("uploading") : reached;
             const state = effective > at ? "is-done" : effective === at ? "is-active" : undefined;
             const Icon = state === "is-done" ? CheckCircle2 : step.icon;
@@ -451,6 +494,10 @@ export function CompletedScreen({
           <a
             key={artifact.url}
             href={artifact.url}
+            // The artifact already carries a descriptive name. Numbering it is
+            // only useful when there is more than one file to tell apart, and
+            // a second `print-cess-` prefix in front of that name is noise on
+            // the counter staff's download.
             download={
               artifacts.length === 1 ? artifact.filename : `${index + 1}-${artifact.filename}`
             }
@@ -482,9 +529,13 @@ async function printAll(artifacts: readonly PrintArtifact[]) {
   for (const artifact of artifacts) await printArtifact(artifact).catch(() => undefined);
 }
 
+/** How long the failure screen waits before trying for a fresh QR code. */
 const UNAVAILABLE_RETRY_SECONDS = 30;
 
 export function UnavailableScreen({ onReset }: { onReset: () => void }) {
+  // A shared display is usually unattended. Rather than waiting for somebody
+  // to find and press the button, it tries again on its own; the button stays
+  // for the visitor or staff member who does not want to wait.
   const [retryIn, setRetryIn] = useState(UNAVAILABLE_RETRY_SECONDS);
   useEffect(() => {
     const deadline = Date.now() + UNAVAILABLE_RETRY_SECONDS * 1000;
@@ -502,6 +553,7 @@ export function UnavailableScreen({ onReset }: { onReset: () => void }) {
   return (
     <main className="kiosk-result kiosk-result--error" lang="ko">
       <Wordmark />
+      {/* A failure never wears a security badge: the icon says what broke. */}
       <PrinterX aria-hidden="true" />
       <h1>지금은 인쇄할 수 없어요</h1>
       <p>잠시 뒤에 다시 시도해 주세요. 계속 안 되면 직원에게 알려 주세요.</p>
@@ -551,5 +603,6 @@ export function playCompletionTone() {
     oscillator.start();
     oscillator.stop(context.currentTime + 0.28);
   } catch {
+    // Completion remains visible when audio is blocked.
   }
 }

@@ -6,6 +6,20 @@ import { expect, test } from "@playwright/test";
 // @ts-expect-error -- plain ESM module shared with the benchmark CLI
 import { polygonIou, scoreBenchmark } from "../../../../scripts/scanner-benchmark/metrics.mjs";
 
+/**
+ * The scanner's accuracy, measured against a known answer.
+ *
+ * `/demo/scanner-lab` draws synthetic phone photos of an A4 sheet placed in 3D
+ * (so the true corners and proportions are exact), then runs each one through
+ * the same detection, live-camera capture check, perspective correction and PDF
+ * steps the scan screen uses. This test turns those observations into the
+ * benchmark format of `benchmarks/scanner/README.md`, scores them with the same
+ * gates as a real-device run, and also holds each scene to its own expectation
+ * so one bad scene cannot hide inside an average.
+ *
+ * It is synthetic evidence, labelled as such in the report. It does not
+ * replace the real-device tier.
+ */
 
 type Observation = {
   id: string;
@@ -26,8 +40,10 @@ type Observation = {
 
 const ARTIFACT_DIR = resolve(process.cwd(), "../../artifacts/scanner-benchmark");
 
+/** Per-scene floors. The suite-level gates in metrics.mjs apply on top. */
 const SCENE_MIN_IOU = 0.95;
 const SCENE_MAX_ASPECT_ERROR_PERCENT = 10;
+/** Share of the crop that falls outside the true page, measured geometrically. */
 const SCENE_MAX_BORDER_BLEED = 0.05;
 
 test("the scanner finds, crops and gates synthetic documents within the quality gates", async ({
@@ -49,7 +65,13 @@ test("the scanner finds, crops and gates synthetic documents within the quality 
     source: "synthetic-render",
     device: "Chromium (Playwright), development build; synthetic scenes, not a real-device claim",
     gates: {
+      // OCR needs the Tesseract runtime and language data from a CDN, which CI
+      // cannot rely on; OCR quality belongs to the real-device tier and the
+      // mocked OCR flow in scanner.spec.ts. The scorer reports it as not measured.
       minOcrCases: 0,
+      // A shared CI runner on a development build is far slower than a phone on
+      // a production build. The 1.8 s device gate would measure the runner, not
+      // the scanner; this ceiling only catches a pathological regression.
       p95ProcessingMs: 8000,
     },
     cases: observations.map((observation) => ({ ...observation, pages: 1 })),

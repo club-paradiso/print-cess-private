@@ -20,6 +20,8 @@ packages/test-fixtures/generated/
 apps/web/public/pdf.worker.min.mjs
 .print-cess/
 .vercel
+# Provisioning credential files (see scripts/provisioning/README.md). These hold
+# Redis/S3/application secrets at rest and must never be committed.
 preview-values.json
 railway-values.json
 *.provisioning.json

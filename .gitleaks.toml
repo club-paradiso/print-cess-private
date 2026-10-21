@@ -3,6 +3,9 @@ title = "Print-cess false-positive policy"
 [extend]
 useDefault = true
 
+# Keep the built-in generic API-key detector enabled. These rule-specific
+# allowlists require both an exact repository path and the expected synthetic
+# match, so similarly shaped values elsewhere continue to fail the scan.
 [[rules]]
 id = "generic-api-key"
 

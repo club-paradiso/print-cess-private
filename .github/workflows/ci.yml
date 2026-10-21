@@ -21,6 +21,9 @@ jobs:
     timeout-minutes: 35
     env:
       CI: "true"
+      # Without a UTF-8 locale the browser sanitizes non-ASCII download names
+      # down to "download", so a Korean file name would fail here for a reason
+      # that has nothing to do with the service.
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
       PUBLIC_BASE_URL: http://127.0.0.1:3000
@@ -79,6 +82,11 @@ jobs:
       - name: Production build
         run: pnpm build
 
+      # A stalled Ubuntu mirror once spent 23 of this job's 35 minutes inside
+      # `playwright install --with-deps` and the end-to-end tests never ran.
+      # Drop a stalled connection instead of waiting on it, cache the browser
+      # binaries, and bound the two installs separately so a slow mirror fails
+      # one short step rather than silently consuming the whole job budget.
       - name: Make apt tolerate a slow mirror
         run: |
           printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\n' \
@@ -90,6 +98,11 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
+      # Chromium is covered by the hosted image, but Playwright WebKit still
+      # needs Linux runtime libraries that are not guaranteed to be preinstalled
+      # (for example libevent-2.1.so.7). Install only WebKit's system deps, after
+      # applying the bounded apt retry/timeout policy above, so mobile viewport
+      # coverage works without returning to an unbounded all-browser apt step.
       - name: Install Playwright WebKit system dependencies
         timeout-minutes: 8
         run: pnpm --filter @print-cess/web exec playwright install-deps webkit
@@ -101,6 +114,16 @@ jobs:
       - name: End-to-end tests
         run: pnpm test:e2e
 
+      # The verdict is the exit code of the steps above; this upload only makes
+      # the run inspectable afterwards. It stays visible when it fails, but a
+      # full Actions storage quota must not turn a passing test run red.
+      #
+      # A green pull-request run is simultaneously the most common run and the
+      # one nobody ever opens. Keep evidence where it is actually read — any
+      # failure, and the main-line record — instead of paying storage for
+      # reports with no reader. The retention window below is untouched: an
+      # acceptance criterion names it, and storage pressure never justifies
+      # shortening it.
       - name: Upload web test evidence
         if: failure() || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         continue-on-error: true
@@ -161,6 +184,10 @@ jobs:
           -p:PublishSingleFile=true
           -o artifacts/kiosk-win-x64
 
+      # The publish step only proves the project compiles into a single file if
+      # something checks the file is there. Assert it here rather than through
+      # `if-no-files-found`, so the assertion holds even when the upload cannot
+      # run. Released binaries come from `release-kiosk.yml`, not from this job.
       - name: Verify the publish produced a single-file executable
         shell: pwsh
         run: |
@@ -180,6 +207,19 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      # A self-contained single-file build is by far the largest thing this
+      # repository uploads: roughly 180 MB per run against an account-wide free
+      # tier of 500 MB, so two or three runs exhaust the quota by themselves.
+      #
+      # Shortening its retention is the obvious relief and still the wrong one.
+      # `PRODUCTION_BLOCKERS.md` carries an unchecked blocker requiring
+      # publish-smoke evidence to expire after seven days, and `TEST_PLAN.md`
+      # makes uploaded Windows evidence a release exit criterion. Seven days it
+      # stays. What changes is how many copies are kept: that criterion is about
+      # the release lineage, so `main` is where the binary is worth storing. A
+      # pull request still restores, builds, tests, publishes, and asserts the
+      # single-file executable exists — every check above runs everywhere, and
+      # only the copy nobody would download is skipped.
       - name: Upload kiosk publish smoke artifact
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
         continue-on-error: true

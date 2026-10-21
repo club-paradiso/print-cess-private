@@ -30,6 +30,9 @@ export class LocalEncryptedBlobTransport implements BlobTransport {
     root = join(process.cwd(), ".print-cess", "blobs"),
   ) {
     this.#root = root;
+    // Local mode has no durable session/key ledger. Any ciphertext from a
+    // previous process is therefore unreachable and must be removed before
+    // the new in-memory runtime serves requests.
     this.#ready = rm(this.#root, { recursive: true, force: true });
   }
 
@@ -146,6 +149,7 @@ export class LocalEncryptedBlobTransport implements BlobTransport {
     try {
       suppliedBytes = Buffer.from(supplied, "base64url");
     } catch {
+      // The fixed zero buffer is compared below to keep the failure path uniform.
     }
     const signatureValid =
       suppliedBytes.length === expected.length && timingSafeEqual(suppliedBytes, expected);
@@ -153,6 +157,7 @@ export class LocalEncryptedBlobTransport implements BlobTransport {
     try {
       payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
     } catch {
+      // A generic authorization error is returned below.
     }
     if (
       !signatureValid ||

@@ -111,6 +111,7 @@ async function fetchSessionStatus(session: VisitorSession): Promise<string> {
   return typeof body.status === "string" ? body.status : "failed";
 }
 
+/** Server session states collapsed onto the four counter-visible steps. */
 function toVisitorStatus(serverStatus: string): VisitorStatus {
   switch (serverStatus) {
     case "waiting":
@@ -176,6 +177,9 @@ export function VisitorPrintFlow({ copy }: { copy: VisitorCopy }) {
     }
   }, []);
 
+  // The first session is minted on mount. The state initializers above already
+  // carry the "preparing" values, so this effect performs no synchronous
+  // setState — the async mint resolves into setState only when it finishes.
   useEffect(() => {
     const run = ++generation.current;
     let cancelled = false;
@@ -224,6 +228,8 @@ export function VisitorPrintFlow({ copy }: { copy: VisitorCopy }) {
     }
   };
 
+  // Session-expiry countdown: the counter screen shows exactly when the
+  // server's file lifetime ends and the uploaded ciphertext is destroyed.
   useEffect(() => {
     if (!session) return;
     const timer = setInterval(() => {
@@ -240,6 +246,8 @@ export function VisitorPrintFlow({ copy }: { copy: VisitorCopy }) {
         const serverStatus = await fetchSessionStatus(session);
         if (!cancelled) setStatus(toVisitorStatus(serverStatus));
       } catch {
+        // A transient poll failure is not a terminal state: the next poll
+        // retries. The session's own expiry still destroys the file.
       }
     };
     void poll();
