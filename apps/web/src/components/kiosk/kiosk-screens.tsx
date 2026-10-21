@@ -381,15 +381,20 @@ function connectedCopy(status: KioskStatus): {
  * What the shared screen shows while the work is happening on somebody's
  * phone: a category and a stage, never a file name, a count, or a thumbnail.
  */
-export function ConnectedScreen({ status, remaining }: { status: KioskStatus; remaining: number }) {
+export function ConnectedScreen({
+  status, remaining, locale = "ko", onLocaleChange,
+}: {
+  status: KioskStatus; remaining: number; locale?: SupportedLocale; onLocaleChange?: LocaleChange;
+}) {
   const reached = JOURNEY_ORDER.indexOf(status);
   const copy = connectedCopy(status);
   const TokenIcon =
     status === "printing" ? Printer : status === "claimed" ? Smartphone : FileSearch;
   return (
-    <main className="kiosk-shell kiosk-shell--connected" lang="ko" data-kiosk-state="connected">
+    <main className="kiosk-shell kiosk-shell--connected" lang={locale} dir={isRightToLeft(locale) ? "rtl" : "ltr"} data-kiosk-state="connected">
       <header className="kiosk-header">
         <Wordmark />
+        <KioskLanguagePicker locale={locale} onChange={onLocaleChange} />
         <p className="kiosk-connected__badge">
           <Smartphone aria-hidden="true" /> 휴대전화가 연결됐어요
           <small lang="en">Phone connected</small>
@@ -455,18 +460,26 @@ export function CompletedScreen({
   artifacts,
   automaticPrinting,
   remaining,
+  locale = "ko",
+  onLocaleChange,
 }: {
   artifacts: PrintArtifact[];
   automaticPrinting: boolean;
   remaining: number;
+  locale?: SupportedLocale;
+  onLocaleChange?: LocaleChange;
 }) {
   return (
     <main
       className="kiosk-result kiosk-result--success"
-      lang="ko"
+      lang={locale}
+      dir={isRightToLeft(locale) ? "rtl" : "ltr"}
       data-printing-mode={automaticPrinting ? "automatic" : "interactive"}
     >
-      <Wordmark />
+      <div className="kiosk-result__topbar">
+        <Wordmark />
+        <KioskLanguagePicker locale={locale} onChange={onLocaleChange} />
+      </div>
       <CheckCircle2 aria-hidden="true" />
       <h1>{automaticPrinting ? "인쇄가 시작됐어요" : "인쇄 준비가 끝났어요"}</h1>
       {/* The one thing left to do, said louder than anything else on the
@@ -543,7 +556,11 @@ async function printAll(artifacts: readonly PrintArtifact[]) {
 /** How long the failure screen waits before trying for a fresh QR code. */
 const UNAVAILABLE_RETRY_SECONDS = 30;
 
-export function UnavailableScreen({ onReset }: { onReset: () => void }) {
+export function UnavailableScreen({
+  onReset, locale = "ko", onLocaleChange,
+}: {
+  onReset: () => void; locale?: SupportedLocale; onLocaleChange?: LocaleChange;
+}) {
   // A shared display is usually unattended. Rather than waiting for somebody
   // to find and press the button, it tries again on its own; the button stays
   // for the visitor or staff member who does not want to wait.
@@ -562,8 +579,11 @@ export function UnavailableScreen({ onReset }: { onReset: () => void }) {
   }, [onReset]);
 
   return (
-    <main className="kiosk-result kiosk-result--error" lang="ko">
-      <Wordmark />
+    <main className="kiosk-result kiosk-result--error" lang={locale} dir={isRightToLeft(locale) ? "rtl" : "ltr"}>
+      <div className="kiosk-result__topbar">
+        <Wordmark />
+        <KioskLanguagePicker locale={locale} onChange={onLocaleChange} />
+      </div>
       {/* A failure never wears a security badge: the icon says what broke. */}
       <PrinterX aria-hidden="true" />
       <h1>지금은 인쇄할 수 없어요</h1>
