@@ -11,14 +11,6 @@ import { isValidVisitorOperatorCookie, VISITOR_OPERATOR_COOKIE } from "@/server/
 
 export const runtime = "nodejs";
 
-/**
- * Mints a visitor print session for a government counter screen (see
- * `/visitor`). The session is the ordinary print-session state machine — QR →
- * claim → upload → kiosk print → cleanup — with the dedicated visitor TTL as
- * its lifetime instead of the public QR window. Uploaded ciphertext is still
- * deleted by session-expiry cleanup, so an abandoned counter session never
- * pins a visitor's file on the server past its lifetime.
- */
 export async function POST(request: Request) {
   try {
     const server = getRuntime();
@@ -49,8 +41,6 @@ export async function POST(request: Request) {
     after(async () => {
       await sweepDueOrphans(server, Date.now(), 3).catch(() => undefined);
     });
-    // Capabilities are declared by the kiosk and carried only in the URL
-    // fragment, where they are never sent back to the service by the browser.
     const capability = `${input.supportsHwpx ? "&hwpx=1" : ""}${input.supportsHwp ? "&hwp=1" : ""}${input.supportsBundle ? "&bundle=1" : ""}`;
     const qrUrl = `${server.config.publicBaseUrl}/s/${session.sessionId}#t=${uploadToken}&fp=${session.kioskPublicKeyFingerprint}${capability}`;
     return json(

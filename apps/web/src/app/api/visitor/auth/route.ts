@@ -9,7 +9,6 @@ import { issueVisitorOperatorCookie, VISITOR_OPERATOR_COOKIE } from "@/server/vi
 
 export const runtime = "nodejs";
 
-/** Staff explicitly unlocks the protected visitor counter; this endpoint never returns the secret. */
 export async function POST(request: Request) {
   try {
     const server = getRuntime();
