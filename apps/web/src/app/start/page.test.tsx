@@ -6,7 +6,10 @@ const { acceptLanguage, preferredCookie } = vi.hoisted(() => ({
 }));
 
 vi.mock("next/headers", () => ({
-  headers: () => Promise.resolve(new Headers({ "accept-language": acceptLanguage.value, cookie: preferredCookie.value })),
+  headers: () =>
+    Promise.resolve(
+      new Headers({ "accept-language": acceptLanguage.value, cookie: preferredCookie.value }),
+    ),
 }));
 
 import HomePage from "./page";
