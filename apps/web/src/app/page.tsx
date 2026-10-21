@@ -23,6 +23,11 @@ export default async function RootPage({
   const { printing, sound } = await searchParams;
   const locale = await requestLocale();
   return (
-    <BatchKioskSimulator automaticPrinting={printing === "auto"} sound={sound !== "off"} services initialLocale={locale} />
+    <BatchKioskSimulator
+      automaticPrinting={printing === "auto"}
+      sound={sound !== "off"}
+      services
+      initialLocale={locale}
+    />
   );
 }
