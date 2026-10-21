@@ -2,10 +2,6 @@ using Paradiso.PrintCess.Core.Documents;
 
 namespace Paradiso.PrintCess.Core.Printing;
 
-/// <summary>
-/// The production-facing print-engine decorator. Composition code must expose this engine,
-/// rather than the platform engine directly, so every PrintAsync call crosses the durable gate.
-/// </summary>
 public sealed class IdempotentPrintEngine : IPrintEngine
 {
     private readonly IdempotentPrintCoordinator _coordinator;
