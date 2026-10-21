@@ -33,6 +33,7 @@ import {
 import { Beacon, ScanFrame, Wordmark } from "@print-cess/ui";
 
 import { printArtifact, type PrintArtifact } from "@/lib/kiosk-print";
+import { LanguagePicker } from "@/components/shared/app-topbar";
 
 /**
  * The screens of the shared display, shared by the routed browser kiosk
@@ -65,13 +66,21 @@ const SPOTLIGHT_INTERVAL_MS = 4500;
  * QR code; these are the other doors, so nobody who came to send a file or
  * scan a page has to know another address.
  */
-const SERVICES: { href: string; korean: string; english: string; icon: typeof Send }[] = [
-  { href: "/send", korean: "파일 보내기", english: "Send files", icon: Send },
-  { href: "/receive", korean: "파일 받기", english: "Receive files", icon: ArrowDownToLine },
-  { href: "/scan", korean: "문서 스캔", english: "Scan a document", icon: ScanLine },
-  { href: "/workstation", korean: "업무용 PC", english: "Work computer", icon: Building2 },
-  { href: "/start", korean: "이용 안내", english: "How it works", icon: CircleHelp },
+const SERVICES: { href: string; key: string; korean: string; english: string; icon: typeof Send }[] = [
+  { href: "/send", key: "homeShareCta", korean: "파일 보내기", english: "Send files", icon: Send },
+  { href: "/receive", key: "homeReceiveCta", korean: "파일 받기", english: "Receive files", icon: ArrowDownToLine },
+  { href: "/scan", key: "homeScanCta", korean: "문서 스캔", english: "Scan a document", icon: ScanLine },
+  { href: "/workstation", key: "homeWorkstationCta", korean: "업무용 PC", english: "Work computer", icon: Building2 },
+  { href: "/start", key: "homeStepsLabel", korean: "이용 안내", english: "How it works", icon: CircleHelp },
 ];
+
+type LocaleChange = (locale: SupportedLocale) => void;
+
+function KioskLanguagePicker({ locale, onChange }: { locale: SupportedLocale; onChange?: LocaleChange }) {
+  return onChange ? (
+    <LanguagePicker locale={locale} onChange={onChange} label={translate(locale, "selectLanguage")} />
+  ) : null;
+}
 
 /** The waiting screen: one instruction, the whole visit, and the code. */
 export function KioskWaitingScreen({
@@ -81,6 +90,8 @@ export function KioskWaitingScreen({
   lifetime: sessionLifetime,
   maxFiles,
   services = false,
+  locale = "ko",
+  onLocaleChange,
 }: {
   status: KioskStatus;
   session?: { qrUrl: string; qrImage: string } | undefined;
@@ -95,6 +106,8 @@ export function KioskWaitingScreen({
    * printer's screen without its QR code.
    */
   services?: boolean;
+  locale?: SupportedLocale;
+  onLocaleChange?: LocaleChange;
 }) {
   const [spotlightIndex, setSpotlightIndex] = useState(0);
   useEffect(() => {
@@ -110,27 +123,28 @@ export function KioskWaitingScreen({
   const qrProgress = session ? Math.min(1, remaining / lifetime) : 1;
 
   return (
-    <main className="kiosk-shell kiosk-shell--waiting" lang="ko" data-kiosk-state="waiting">
+    <main className="kiosk-shell kiosk-shell--waiting" lang={locale} dir={isRightToLeft(locale) ? "rtl" : "ltr"} data-kiosk-state="waiting">
       <header className="kiosk-header">
         <Wordmark />
+        <KioskLanguagePicker locale={locale} onChange={onLocaleChange} />
         {/* Only while the code is still being made. Once it is on screen the
             code itself says the display is ready; a pill reading "available"
             only made visitors wonder what was available. */}
         {status === "preparing" ? (
           <p className="kiosk-availability" aria-live="polite">
             <span className="kiosk-availability__dot" />
-            QR코드를 준비하고 있어요
+            {locale === "ko" ? "QR코드를 준비하고 있어요" : translate(locale, "qrScanStarting")}
           </p>
         ) : null}
         {services ? (
-          <nav className="kiosk-services" aria-label="다른 기능 · More">
+          <nav className="kiosk-services" aria-label={translate(locale, "homeMoreTitle")}>
             <ul>
-              {SERVICES.map(({ href, korean, english, icon: Icon }) => (
+              {SERVICES.map(({ href, key, korean, english, icon: Icon }) => (
                 <li key={href}>
                   <Link href={href}>
                     <Icon aria-hidden="true" />
                     <span>
-                      <strong>{korean}</strong>
+                      <strong>{locale === "ko" ? korean : translate(locale, key)}</strong>
                       <small lang="en">{english}</small>
                     </span>
                   </Link>
@@ -152,11 +166,15 @@ export function KioskWaitingScreen({
             <Beacon size="sm" />
           </div>
 
-          <h1 id="kiosk-title" className="kiosk-title">
-            <span>휴대전화 카메라로</span>
-            <span>
-              <em>QR코드</em>를 비추세요
-            </span>
+          <h1 id="kiosk-title" className={locale === "ko" ? "kiosk-title" : "kiosk-title kiosk-title--translated"}>
+            {locale === "ko" ? (
+              <>
+                <span>휴대전화 카메라로</span>
+                <span><em>QR코드</em>를 비추세요</span>
+              </>
+            ) : (
+              <span>{translate(locale, "kioskScanTitle")}</span>
+            )}
           </h1>
           <p className="kiosk-english" lang="en">
             Point your phone camera at the QR code
@@ -187,9 +205,9 @@ export function KioskWaitingScreen({
                 1
               </span>
               <div>
-                <strong>QR코드 비추기</strong>
+                <strong>{locale === "ko" ? "QR코드 비추기" : translate(locale, "homePrintStepScan")}</strong>
                 <small>
-                  휴대전화에 뜨는 링크를 누르세요
+                  {locale === "ko" ? "휴대전화에 뜨는 링크를 누르세요" : translate(locale, "homePrintStepScanBody")}
                   <span lang="en"> · Tap the link on your phone</span>
                 </small>
               </div>
@@ -202,15 +220,15 @@ export function KioskWaitingScreen({
                 2
               </span>
               <div>
-                <strong>휴대전화에서 파일 고르기</strong>
+                <strong>{locale === "ko" ? "휴대전화에서 파일 고르기" : translate(locale, "homePrintStepPick")}</strong>
                 {maxFiles ? (
                   <small>
-                    사진과 PDF, 한 번에 최대 {maxFiles}개
+                    {locale === "ko" ? `사진과 PDF, 한 번에 최대 ${maxFiles}개` : translate(locale, "homePrintStepPickBody")}
                     <span lang="en"> · Choose up to {maxFiles} files</span>
                   </small>
                 ) : (
                   <small>
-                    사진이나 PDF를 고르고 미리 보기를 확인하세요
+                    {locale === "ko" ? "사진이나 PDF를 고르고 미리 보기를 확인하세요" : translate(locale, "homePrintStepPickBody")}
                     <span lang="en"> · Pick a photo or PDF</span>
                   </small>
                 )}
@@ -224,9 +242,9 @@ export function KioskWaitingScreen({
                 3
               </span>
               <div>
-                <strong>프린터에서 종이 받기</strong>
+                <strong>{locale === "ko" ? "프린터에서 종이 받기" : translate(locale, "homePrintStepCollect")}</strong>
                 <small>
-                  고른 파일이 바로 인쇄돼요
+                  {locale === "ko" ? "고른 파일이 바로 인쇄돼요" : translate(locale, "homePrintStepCollectBody")}
                   <span lang="en"> · Collect your pages</span>
                 </small>
               </div>
@@ -236,7 +254,7 @@ export function KioskWaitingScreen({
 
         <section
           className="kiosk-qr"
-          aria-label="휴대전화로 스캔할 QR코드"
+          aria-label={translate(locale, "kioskScanTitle")}
           // The QR URL carries the one-time upload token and key fingerprint.
           // End-to-end tests need to read it, but a Production kiosk must not
           // publish it as page text where a DOM snapshot or an extension could
@@ -246,7 +264,7 @@ export function KioskWaitingScreen({
           <p className="kiosk-qr__instruction">
             <Camera aria-hidden="true" />
             <span>
-              <strong>QR코드를 카메라로 비추세요</strong>
+              <strong>{locale === "ko" ? "QR코드를 카메라로 비추세요" : translate(locale, "kioskScanTitle")}</strong>
               <small>사진을 찍을 필요는 없습니다 · No photo needed</small>
             </span>
           </p>
@@ -255,7 +273,7 @@ export function KioskWaitingScreen({
               <ScanFrame />
               {session ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={session.qrImage} alt="휴대전화로 스캔할 Print-cess 보안 QR코드" />
+                <img src={session.qrImage} alt={translate(locale, "kioskScanTitle")} />
               ) : (
                 <div className="kiosk-qr__loading" aria-busy="true" />
               )}
@@ -280,15 +298,11 @@ export function KioskWaitingScreen({
       <footer className="kiosk-footer">
         <p>
           <LockKeyhole aria-hidden="true" />
-          <span>
-            인쇄가 끝나면 <strong>보낸 파일은 바로 삭제</strong>
-          </span>
+          <span>{locale === "ko" ? <>인쇄가 끝나면 <strong>보낸 파일은 바로 삭제</strong></> : translate(locale, "privacySummary")}</span>
         </p>
         <p>
           <UserX aria-hidden="true" />
-          <span>
-            <strong>가입 없이</strong> 바로 인쇄
-          </span>
+          <span>{locale === "ko" ? <><strong>가입 없이</strong> 바로 인쇄</> : translate(locale, "homeNoAccount")}</span>
         </p>
         <p>
           <FileCheck2 aria-hidden="true" />
@@ -298,10 +312,7 @@ export function KioskWaitingScreen({
         </p>
         <p className="kiosk-languages">
           <Languages aria-hidden="true" />
-          <span>
-            휴대전화 화면은 {SUPPORTED_LOCALES.length}개 언어 지원 ·{" "}
-            <span lang="en">{SUPPORTED_LOCALES.length} languages on your phone</span>
-          </span>
+          <span>{SUPPORTED_LOCALES.length} languages · {translate(locale, "selectLanguage")}</span>
         </p>
       </footer>
     </main>
