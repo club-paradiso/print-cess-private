@@ -2,6 +2,8 @@ import { headers } from "next/headers";
 
 import { matchAcceptLanguage, type SupportedLocale } from "@print-cess/i18n";
 
+import { preferredLocaleFromCookie } from "./locale-preference";
+
 /**
  * The visitor's language for this request, read from `Accept-Language`.
  *
@@ -14,5 +16,8 @@ import { matchAcceptLanguage, type SupportedLocale } from "@print-cess/i18n";
  */
 export async function requestLocale(): Promise<SupportedLocale> {
   const requestHeaders = await headers();
-  return matchAcceptLanguage(requestHeaders.get("accept-language"));
+  return (
+    preferredLocaleFromCookie(requestHeaders.get("cookie")) ??
+    matchAcceptLanguage(requestHeaders.get("accept-language"))
+  );
 }
