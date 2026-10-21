@@ -255,9 +255,18 @@ export function BatchKioskSimulator({
       />
     );
   }
-  if (status === "failed") return <UnavailableScreen onReset={reset} locale={locale} onLocaleChange={setLocale} />;
+  if (status === "failed") {
+    return <UnavailableScreen onReset={reset} locale={locale} onLocaleChange={setLocale} />;
+  }
   if (status !== "preparing" && status !== "waiting") {
-    return <ConnectedScreen status={status} remaining={remaining} locale={locale} onLocaleChange={setLocale} />;
+    return (
+      <ConnectedScreen
+        status={status}
+        remaining={remaining}
+        locale={locale}
+        onLocaleChange={setLocale}
+      />
+    );
   }
 
   return (
