@@ -4,7 +4,21 @@ import { preferredLocaleFromCookie, VISITOR_LOCALE_COOKIE } from "./locale-prefe
 
 describe("explicit visitor language", () => {
   it("accepts every supported locale, including right-to-left languages", () => {
-    for (const code of ["ko", "en", "zh-CN", "id", "fil", "vi", "th", "ne", "km", "ar", "ru", "mn", "uk"]) {
+    for (const code of [
+      "ko",
+      "en",
+      "zh-CN",
+      "id",
+      "fil",
+      "vi",
+      "th",
+      "ne",
+      "km",
+      "ar",
+      "ru",
+      "mn",
+      "uk",
+    ]) {
       expect(preferredLocaleFromCookie(`${VISITOR_LOCALE_COOKIE}=${code}`)).toBe(code);
     }
   });
