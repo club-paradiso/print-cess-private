@@ -66,12 +66,6 @@ import { PairingEntry } from "./pairing-entry";
 
 type Stage = "code" | "scanning" | "checking" | "pending" | "files" | "error";
 
-/**
- * What is known about one received file. Keeping this per file rather than one
- * state for the whole transfer is what lets a failure on the third of five stop
- * being a failure of all five: the two that arrived stay arrived, and the retry
- * asks only for what is missing.
- */
 type FileState =
   | { status: "waiting" }
   | { status: "saving"; progress: DropProgress; minutesRemaining: number | null }
@@ -81,24 +75,13 @@ type FileState =
 
 const WAITING: FileState = { status: "waiting" };
 
-/**
- * How often a receiver who arrived early asks whether the sender has finished.
- * It starts responsive and backs off, because a hand-off is usually seconds
- * away and occasionally half an hour away, and neither should cost the service
- * a request every second.
- */
 function pendingDelayMs(attempt: number): number {
   return Math.min(8000, 1500 * 2 ** Math.floor(attempt / 4));
 }
 
 export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale }) {
   const [locale, setLocale, text] = useDropLocale(initialLocale);
-  // Read during render, not in an effect, so a phone arriving from a scanned QR
-  // code never flashes the keypad before the transfer opens.
   const scannedOnArrival = useSyncExternalStore(subscribeNever, readHasFragment, () => false);
-  // Once the arrival code has been tried and the visitor starts over, the
-  // fragment no longer describes this screen. Without this, "Try again" after
-  // a bad link went back to the spinner and stayed there.
   const [arrivalHandled, setArrivalHandled] = useState(false);
   const [stage, setStage] = useState<Stage>("code");
   const [entry, setEntry] = useState("");
@@ -111,9 +94,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
   const abort = useRef<AbortController>(null);
   const video = useRef<HTMLVideoElement>(null);
   const scanner = useRef<DropScanner>(null);
-  // Bumped by every scan, stop and unmount. A scanner that finishes starting
-  // after its attempt was abandoned (the camera can be live while the jsQR
-  // fallback is still downloading) is stopped instead of kept.
   const scanAttempt = useRef(0);
   const pending = useRef<AbortController>(null);
   const canScan = useSyncExternalStore(subscribeNever, supportsCodeScanning, () => false);
@@ -121,9 +101,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
   const canStream = useSyncExternalStore(subscribeNever, supportsStreamingSave, () => true);
   const canPickFolder = useSyncExternalStore(subscribeNever, readCanPickFolder, () => false);
 
-  // Save decisions are made inside asynchronous handlers that outlive the
-  // render they started in, so completion is read from a mirror of the state
-  // rather than from a snapshot that is already one update out of date.
   const statesRef = useRef<FileState[]>([]);
 
   const writeStates = useCallback((next: FileState[]) => {
@@ -141,12 +118,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
     [writeStates],
   );
 
-  /**
-   * Opens a transfer, and keeps waiting when the code is right but the sending
-   * phone has not finished. Arriving before the sender is the ordinary case for
-   * a large hand-off, and being told the code is invalid for a minute and a
-   * half was the single worst moment in the flow.
-   */
   const open = useCallback(
     async (candidate: string, onRecognized?: () => void) => {
       pending.current?.abort();
@@ -159,12 +130,8 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
         for (let attempt = 0; opened.state === "collecting"; attempt += 1) {
           setExpiresAt(opened.expiresAt);
           setStage("pending");
-          // A sender who closed their page mid-upload never seals the transfer.
-          // Waiting past its expiry is waiting for something that is not coming.
           if (opened.expiresAt <= Date.now()) throw new DropTransferError("dropExpired");
           await wait(pendingDelayMs(attempt), controller.signal);
-          // The keys are handed back so the wait costs one small request rather
-          // than stretching the transfer code again every few seconds.
           opened = await inspectDrop(opened.keys, { signal: controller.signal });
         }
         if (controller.signal.aborted) return;
@@ -178,12 +145,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
     [settle],
   );
 
-  /**
-   * Opening from a tap. The spinner is announced here rather than inside
-   * `open`, because a phone that arrived from a scanned link is already showing
-   * it — the fragment was read during render — and announcing it again from an
-   * effect would be a render caused by a render.
-   */
   const startOpen = useCallback(
     (candidate: string) => {
       setStage("checking");
@@ -192,10 +153,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
     [open],
   );
 
-  // A scanned QR code carries the transfer code in the fragment, so the
-  // receiving phone skips straight past the keypad. The fragment is dropped
-  // once the transfer is open, which also lets a reload before then retry with
-  // the same code instead of stranding the visitor on an empty keypad.
   useEffect(() => {
     const scanned = parseDropFragment(window.location.hash);
     if (!scanned) return;
@@ -227,10 +184,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
     [writeStates],
   );
 
-  /**
-   * Tells the sending phone that this side finished, once and only once every
-   * file has actually settled. It carries nothing but that fact.
-   */
   const reportIfComplete = useCallback((received: ReceivedDrop) => {
     const settled = statesRef.current.every(
       (state) => state.status === "saved" || state.status === "shared",
@@ -238,11 +191,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
     if (settled) void reportDropDelivered(received.dropId);
   }, []);
 
-  /**
-   * Receives one file into a destination that was chosen during the tap that
-   * asked for it. Every outcome comes back from the destination, so the screen
-   * says "Saved" only where a file was actually written and closed.
-   */
   const runSave = useCallback(
     async (target: SaveTarget, index: number, signal: AbortSignal): Promise<SaveOutcome> => {
       if (!drop) throw new Error("dropNetworkError");
@@ -285,9 +233,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
       setNoticeKey(undefined);
       let target: SaveTarget;
       try {
-        // Standard downloads do not grant file-system write access and avoid
-        // Chromium's alarming native "this site can see edits" save dialog.
-        // Explicit folder saves remain available as a separate action below.
         target = await pickSaveTarget(file);
       } catch (error) {
         if (error instanceof SaveError && error.code === "dropSaveCancelled") return;
@@ -310,11 +255,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
     [drop, reportIfComplete, runSave, updateFile],
   );
 
-  /**
-   * Download remaining files by default. Writing directly into a selected
-   * folder is a separate, explicitly requested action; never silently request
-   * file-system access on the ordinary Save all button.
-   */
   const saveRemaining = useCallback(
     async (mode: "download" | "folder" = "download") => {
       if (!drop) return;
@@ -333,7 +273,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
           setNoticeKey(dropErrorKey(error));
           return;
         }
-        // A dismissed folder dialog is a decision, not a failure to route around.
         if (!folder) return;
       }
 
@@ -349,8 +288,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
             await runSave(target, index, controller.signal);
           } catch (error) {
             updateFile(index, { status: "failed", errorKey: dropErrorKey(error) });
-            // One file failing is not the transfer failing. Carry on with the
-            // rest, unless the visitor stopped it themselves.
             if (controller.signal.aborted) break;
           }
         }
@@ -411,7 +348,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
   const scan = useCallback(async () => {
     setNoticeKey(undefined);
     setStage("scanning");
-    // The element only exists once the scanning stage has painted.
     await new Promise((resolve) => window.requestAnimationFrame(resolve));
     const element = video.current;
     if (!element) return;
@@ -464,8 +400,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
     (value: string) => {
       const read = readDropCodeEntry(value);
       setEntry(read.display);
-      // A whole link arriving at once is unambiguous, so it opens without
-      // asking the visitor to press a button they did not know they needed.
       if (read.fromLink && read.code) startOpen(read.code);
     },
     [startOpen],
@@ -484,8 +418,6 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
   const anyFailed = fileStates.some((state) => state.status === "failed");
   const busy = fileStates.some((state) => state.status === "saving");
   const everythingArrived = fileStates.length > 0 && outstanding === 0;
-  // "Not saved yet" only means something once at least one file has moved;
-  // before that, every row would repeat it.
   const anyStarted = fileStates.some((state) => state.status !== "waiting");
 
   return (
@@ -708,10 +640,6 @@ function ReceivedFileRow({
   );
 }
 
-/**
- * The copy for each outcome, kept apart from the components so the distinction
- * between a written file and a started download cannot be lost in a ternary.
- */
 function fileStateKey(state: FileState): string {
   switch (state.status) {
     case "waiting":
@@ -753,8 +681,6 @@ function wait(ms: number, signal: AbortSignal): Promise<void> {
 }
 
 function subscribeNever(): () => void {
-  // Browser capabilities and the arrival fragment do not change while a
-  // transfer screen is open.
   return () => {};
 }
 

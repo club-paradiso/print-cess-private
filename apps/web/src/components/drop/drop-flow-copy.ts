@@ -1,12 +1,5 @@
 import type { SupportedLocale } from "@print-cess/i18n";
 
-/**
- * Words the sending screen gained in the 2026-10-13 pass: the three steps of a
- * hand-off, and the line that opens the number-and-shape alternative. Kept
- * beside the flow, like the print flow's batch copy, so the shared translation
- * table does not grow for one screen. Korean and English were edited; the rest
- * were written for meaning and need native review.
- */
 export type DropFlowCopy = {
   stepPick: string;
   stepHandOver: string;

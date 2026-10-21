@@ -9,12 +9,6 @@ import type { Text } from "@/lib/use-visitor-locale";
 
 import { PairingShapeMark, shapeLabel } from "./pairing-shape";
 
-/**
- * The sender chooses the shared shape once the upload seals, so the transfer
- * code is never escrowed while bytes are still moving and the three-minute
- * clock is entirely available to the receiver. QR and shared links remain the
- * private path.
- */
 export function PairingHandover({
   transferCode,
   sealed,

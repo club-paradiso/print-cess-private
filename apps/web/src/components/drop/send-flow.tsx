@@ -87,14 +87,8 @@ export function SendFlow({
   back,
 }: {
   initialLocale?: SupportedLocale;
-  /** The language picked on the screen that handed over to this one. */
   carriedLocale?: SupportedLocale;
-  /**
-   * Files that are already in hand, such as a PDF the scanner just made on
-   * this phone. They are offered exactly as if the visitor had picked them.
-   */
   initialFiles?: readonly File[];
-  /** A way back to whatever handed those files over. */
   back?: { label: string; onBack: () => void };
 }) {
   const [locale, setLocale, text] = useDropLocale(initialLocale, carriedLocale);
@@ -118,8 +112,6 @@ export function SendFlow({
   const abort = useRef<AbortController>(null);
   const created = useRef<SendResult>(undefined);
 
-  // The published limits, so a selection that this deployment will never accept
-  // is refused on the phone rather than after several minutes of uploading.
   useEffect(() => {
     const controller = new AbortController();
     void getDropCapabilities(controller.signal)
@@ -131,14 +123,10 @@ export function SendFlow({
         }),
       )
       .catch(() => {
-        // The protocol ceilings remain in force; the server checks again anyway.
       });
     return () => controller.abort();
   }, []);
 
-  // The selection is a pure function of the chosen files and the published
-  // limits, so it is derived rather than stored. Removing one file therefore
-  // costs one removal, instead of clearing everything and starting again.
   const { selection, selectionErrorKey } = useMemo(() => {
     if (chosen.length === 0) return { selection: undefined, selectionErrorKey: undefined };
     try {
@@ -154,8 +142,6 @@ export function SendFlow({
     if (arriving.length === 0) return;
     setChosen((current) => {
       const merged = [...current, ...arriving];
-      // The same file picked twice would be sent twice; identity here is the
-      // name, size, and modification time the browser reports.
       return merged.filter(
         (file, index) =>
           merged.findIndex(
@@ -206,15 +192,10 @@ export function SendFlow({
       completedParts: 0,
       totalParts: selection.partCount,
     });
-    // A phone that sleeps mid-upload throttles timers and can stall the
-    // transfer, which reads as the service quietly failing.
     const releaseWakeLock = await holdScreenAwake();
     try {
       await sendDrop(selection, {
         signal: controller.signal,
-        // The code appears as soon as the service holds the record, not when
-        // the last byte lands. The other phone can scan and wait through a
-        // gigabyte instead of watching this one's progress bar first.
         onDropCreated: (record) => {
           created.current = record;
           void showCode(record);
@@ -228,10 +209,6 @@ export function SendFlow({
       created.current = undefined;
       setSealed(true);
     } catch (error) {
-      // The code went on screen the moment the record existed, so somebody may
-      // already be holding it and waiting. A send that stops here will never be
-      // sealed, and leaving the record behind would leave them waiting on a
-      // transfer that is not coming until it expires — so it is erased now.
       if (created.current) {
         await revokeDrop(created.current.dropId, created.current.ownerToken).catch(() => undefined);
         created.current = undefined;
@@ -248,9 +225,6 @@ export function SendFlow({
     abort.current?.abort();
   }, []);
 
-  // Once the code is on screen, the only thing left to tell the sender is how
-  // far the other phone has got — in the four steps the service can honestly
-  // distinguish, and no further.
   useEffect(() => {
     if (stage !== "ready" || !result || deleted || receiver === "delivered") return;
     let active = true;
@@ -280,7 +254,6 @@ export function SendFlow({
       await navigator.clipboard.writeText(link);
       setCopied(true);
     } catch {
-      // Clipboard access can be refused; the code on screen still works.
     }
   }, [result]);
 
@@ -323,10 +296,6 @@ export function SendFlow({
   };
 
   const flowCopy = dropFlowCopy(locale);
-  // The same three-step strip the print flow shows, once the visitor is past
-  // choosing, so a hand-off reads as a short sequence with an end rather than
-  // a screen that just sits there. The first screen stays as bare as V2 made
-  // it: the two source tiles are the whole job there.
   const step = receiver === "delivered" ? 3 : 2;
 
   return (
@@ -406,8 +375,6 @@ export function SendFlow({
             />
           )}
           {selection ? (
-            // Pinned to the bottom like the print flow's button, so a long
-            // list of files never pushes the one forward action off screen.
             <div className="mobile-actions">
               <PrimaryButton onClick={() => void start()}>
                 <Send aria-hidden="true" /> {text("dropStartSending")}
@@ -452,10 +419,6 @@ export function SendFlow({
         ) : (
           <section
             className="mobile-step drop-ready"
-            // The transfer code is the whole secret and no longer appears on
-            // screen. End-to-end tests need it to stand in for the phone that
-            // scanned the QR code, so it is exposed outside a Production build
-            // only — exactly as the kiosk exposes its session URL.
             data-transfer-code={process.env.NODE_ENV === "production" ? undefined : result.code}
           >
             <h1>{text(sealed ? "dropReady" : "dropReadyEarly")}</h1>
@@ -543,12 +506,6 @@ export function SendFlow({
   );
 }
 
-/**
- * What the service actually knows about the other phone, and nothing more.
- * "Opened" is an open request; "on their way" is a first chunk being asked for;
- * "taken" is the receiving flow reporting that it finished. Saying any of these
- * one step early is the difference between a receipt and a guess.
- */
 function ReceiverStatus({
   receiver,
   sealed,
@@ -619,8 +576,6 @@ function SelectedFiles({
           <li key={`${file.name}-${file.size}-${file.lastModified}`} className="drop-file">
             <FileRow
               file={{
-                // The name shown is the one that will travel, so a name the
-                // policy had to change is visible before anything is sent.
                 name: selection?.manifestFiles[index]?.name ?? file.name,
                 size: file.size,
                 type: file.type,
@@ -649,6 +604,5 @@ function SelectedFiles({
 }
 
 function subscribeNever(): () => void {
-  // Sharing support does not change while a transfer screen is open.
   return () => {};
 }

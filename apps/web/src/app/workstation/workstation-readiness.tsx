@@ -79,8 +79,6 @@ export function WorkstationReadiness({ copy }: { copy: Copy }) {
   ];
   const requiredFailure = checks.some((check) => check.required && check.ok === false);
   const optionalFailure = checks.some((check) => !check.required && check.ok === false);
-  // A required check still in flight must not read as success: on a blocked
-  // network the reachability request can take its whole timeout to fail.
   const requiredPending = checks.some((check) => check.required && check.ok === null);
   const tone = requiredFailure
     ? "blocked"
@@ -137,17 +135,9 @@ export function WorkstationReadiness({ copy }: { copy: Copy }) {
   );
 }
 
-/**
- * Asks the deployment for its published limits. It is the cheapest request
- * that travels the same path as a transfer — this origin's API through the
- * agency proxy — so a green result means the proxy actually lets Print-cess
- * through rather than only that the page itself loaded from a cache.
- */
 function useNetworkState(): NetworkState {
   const [state, setState] = useState<NetworkState>({ status: "checking" });
   useEffect(() => {
-    // Anyone who starts from this page is on a work computer; send their
-    // ciphertext through this origin from the first part.
     preferSameOriginStorageRoute();
     const controller = new AbortController();
     getDropCapabilities(controller.signal)
@@ -159,9 +149,6 @@ function useNetworkState(): NetworkState {
       )
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
-        // Any HTTP answer — a 429 from many workstations sharing one egress
-        // address included — proves the proxy let this origin through. Only a
-        // request that never got a response means the network is blocking it.
         setState(
           error instanceof ApiClientError && error.status > 0
             ? { status: "reachable", sameOriginTransfers: false }
