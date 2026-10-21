@@ -103,7 +103,10 @@ describe("a file the visitor chose a place for", () => {
     const picker = vi.fn(async () => handle);
     (window as PickerWindow).showSaveFilePicker = picker;
 
-    const target = await pickSaveTarget({ name: "report.pdf", type: "application/pdf", size: 10 }, { preferFilePicker: true });
+    const target = await pickSaveTarget(
+      { name: "report.pdf", type: "application/pdf", size: 10 },
+      { preferFilePicker: true },
+    );
     expect(target.kind).toBe("picked-file");
     expect(target.outcome).toBe("saved");
 
@@ -120,7 +123,10 @@ describe("a file the visitor chose a place for", () => {
     const picker = vi.fn(async () => ({ createWritable: async () => fakeWritable().stream }));
     (window as PickerWindow).showSaveFilePicker = picker;
 
-    await pickSaveTarget({ name: "전입신고서.hwpx", type: "application/hwp+zip", size: 10 }, { preferFilePicker: true });
+    await pickSaveTarget(
+      { name: "전입신고서.hwpx", type: "application/hwp+zip", size: 10 },
+      { preferFilePicker: true },
+    );
 
     expect(picker).toHaveBeenCalledWith(
       expect.objectContaining({ suggestedName: "전입신고서.hwpx" }),
@@ -133,7 +139,10 @@ describe("a file the visitor chose a place for", () => {
     });
 
     await expect(
-      pickSaveTarget({ name: "report.pdf", type: "application/pdf", size: 10 }, { preferFilePicker: true }),
+      pickSaveTarget(
+        { name: "report.pdf", type: "application/pdf", size: 10 },
+        { preferFilePicker: true },
+      ),
     ).rejects.toMatchObject({ code: "dropSaveCancelled" });
   });
 
@@ -149,7 +158,10 @@ describe("a file the visitor chose a place for", () => {
       createWritable: async () => stream,
     }));
 
-    const target = await pickSaveTarget({ name: "a.bin", type: "", size: 1 }, { preferFilePicker: true });
+    const target = await pickSaveTarget(
+      { name: "a.bin", type: "", size: 1 },
+      { preferFilePicker: true },
+    );
     const sink = await target.open({ name: "a.bin", type: "" });
     await expect(sink.finish()).rejects.toThrow(/disk full/u);
   });
