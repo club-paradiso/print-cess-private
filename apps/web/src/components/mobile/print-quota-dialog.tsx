@@ -8,18 +8,6 @@ import { PrimaryButton, SecondaryButton } from "@print-cess/ui";
 
 import type { Text } from "@/lib/use-visitor-locale";
 
-/**
- * The screen a visitor meets when they ask for more pages than the free limit.
- *
- * It is a joke with a job. The pricing is absurd on purpose, but the four facts
- * a blocked visitor actually needs — how many pages they picked, how many are
- * free, why nothing printed, and what to do next — are the largest and plainest
- * things on the screen, and the disclaimer that nothing here is for sale is
- * visible without scrolling past the prices.
- *
- * Past the technical ceiling the joke stops: no subscription makes the machine
- * able to print more than it can print, so that case gets a plain panel.
- */
 export function PrintQuotaDialog({
   decision,
   text,
@@ -41,9 +29,6 @@ export function PrintQuotaDialog({
   }, []);
 
   const handleReselect = useCallback(() => {
-    // Browsers do not fire `change` when the same file path is selected twice.
-    // Clear every file input before the caller reopens its picker so a visitor
-    // can edit/overwrite a rejected document and choose that same path again.
     for (const input of document.querySelectorAll<HTMLInputElement>('input[type="file"]')) {
       input.value = "";
     }
@@ -168,8 +153,6 @@ function PaywallPanel({
 
   useEffect(() => {
     if (stage !== "searching") return;
-    // Long enough to read the line, short enough that a blocked visitor is not
-    // kept waiting for a punchline. Anyone who asked for less motion skips it.
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const timer = window.setTimeout(() => setStage("notFound"), reduced ? 200 : 1400);
     return () => window.clearTimeout(timer);

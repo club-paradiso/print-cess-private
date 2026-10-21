@@ -64,8 +64,6 @@ export function ScanComposer({
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
-  // OCR downloads a large language model; make it opt-in so the basic scan
-  // completes even with poor connectivity or a blocked OCR CDN.
   const [searchablePdf, setSearchablePdf] = useState(false);
   const [ocrFallbackPages, setOcrFallbackPages] = useState<PdfImagePage[] | null>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
@@ -371,7 +369,6 @@ export function ScanComposer({
             {pages.map((page, index) => (
               <li key={page.id}>
                 <div className="scan-page-preview">
-                  {/* These are local object URLs; Next image optimization cannot improve them. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={page.previewUrl}

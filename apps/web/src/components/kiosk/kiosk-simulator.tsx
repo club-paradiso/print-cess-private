@@ -46,20 +46,9 @@ type RegisteredSession = {
   fingerprint: string;
 };
 
-/**
- * The outcome of getting one QR code onto the screen. The failing step travels
- * with the failure so the development console still names where it broke,
- * while the caller stays free to apply a single shared attempt to whichever run
- * of the effect is still mounted.
- */
 type PreparedSession =
   { ok: true; session: RegisteredSession } | { ok: false; step: string; reason: string };
 
-/**
- * Mints one print session and renders its QR code. Kept out of the effect body
- * so that the promise it returns can be reused rather than the work repeated:
- * every call here consumes a session from the per-counter creation limit.
- */
 async function prepareSession(): Promise<PreparedSession> {
   let step = "key-generation";
   try {
@@ -147,10 +136,6 @@ export function KioskSimulator({
 
   useEffect(() => {
     let active = true;
-    // Registering a session mints server-side state and counts against the
-    // per-counter creation limit, so it is started once per QR generation.
-    // React runs an effect twice in development; without this the screen would
-    // quietly burn two sessions every time it opened and abandon the first.
     if (preparation.current?.generation !== generation) {
       preparation.current = { generation, ready: prepareSession() };
     }
@@ -225,7 +210,6 @@ export function KioskSimulator({
             }
           }
         } catch {
-          // Transient polling errors do not change the kiosk screen.
         }
       })();
     }, 750);
@@ -258,9 +242,6 @@ export function KioskSimulator({
       />
     );
   if (status === "failed") return <UnavailableScreen onReset={reset} />;
-  // Once a phone has claimed the session, telling the room to scan a QR code
-  // that is no longer valid is both wrong and confusing: the visitor standing
-  // here is looking for what happens next, and it is happening on their phone.
   if (status !== "preparing" && status !== "waiting") {
     return <ConnectedScreen status={status} remaining={remaining} />;
   }
@@ -324,28 +305,20 @@ async function consumeAndPrint(
     if (detected === "pdf") {
       await validatePdf(plaintext);
     } else if (detected === "png" || detected === "jpeg") {
-      // `docs/SECURITY.md` requires the kiosk to enforce the image dimension
-      // and resource budget itself, not to inherit the phone's verdict.
       const { width, height } =
         detected === "png" ? parsePngDimensions(plaintext) : parseJpegDimensions(plaintext);
       validateDimensions(width, height);
     } else {
-      // Only the Windows kiosk carries a Hancom renderer, and this browser
-      // kiosk never advertises HWP/HWPX support, so anything else fails closed.
       throw new Error("unsupported file kind for the browser kiosk");
     }
     const artifact = createPrintArtifact(plaintext, decrypted.fileKind);
     setArtifact(artifact);
     setStatus("printing");
     await kioskTransition(session, "printing");
-    // A document that never reached the print dialog was not printed, so a
-    // frame that failed to load ends the session as failed, never completed.
     await printArtifact(artifact);
     await kioskTransition(session, "completed");
     setStatus("completed");
   } catch {
-    // The failure screen offers no reprint or download, so the decrypted Blob
-    // is released now instead of when the next QR code is created.
     setArtifact(undefined);
     setStatus("failed");
     await kioskTransition(session, "failed").catch(() => undefined);

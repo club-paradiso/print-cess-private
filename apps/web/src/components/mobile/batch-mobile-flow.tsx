@@ -98,11 +98,6 @@ const HELP_KEYS: Record<Stage, string> = {
   error: "helpError",
 };
 
-/**
- * What one attempt at spending a QR code produced. Errors are carried back as a
- * copy key rather than thrown so that the caller can apply the result of a
- * single shared attempt to whichever run of the effect is still mounted.
- */
 type ClaimOutcome =
   | {
       ok: true;
@@ -113,12 +108,6 @@ type ClaimOutcome =
     }
   | { ok: false; errorKey: string };
 
-/**
- * Reads the credentials out of the URL fragment and spends them exactly once.
- * The kiosk's public key is checked against the fingerprint the QR code
- * carried, so a session handed back by anything other than the kiosk on screen
- * is cancelled rather than used.
- */
 async function claimOnce(sessionId: string): Promise<ClaimOutcome> {
   const fragment = parseSessionFragment(window.location.hash);
   if (!fragment) return { ok: false, errorKey: "invalidQr" };
@@ -186,9 +175,6 @@ export function BatchMobileFlow({
   const watchAbort = useRef<AbortController>(null);
   const claimAttempt = useRef<{ sessionId: string; outcome: Promise<ClaimOutcome> }>(null);
 
-  // An input keeps its value after a rejected pick, and choosing the same file
-  // again then fires no change event. The iCloud notice asks for exactly that
-  // second pick once the download finishes, so every rejection clears both.
   const resetPickers = useCallback(() => {
     if (photoInput.current) photoInput.current.value = "";
     if (fileInput.current) fileInput.current.value = "";
@@ -210,7 +196,6 @@ export function BatchMobileFlow({
     try {
       window.close();
     } catch {
-      // A tab opened by scanning is usually not script-closeable.
     }
     window.setTimeout(() => {
       if (window.closed) return;
@@ -232,8 +217,6 @@ export function BatchMobileFlow({
 
   useEffect(() => () => watchAbort.current?.abort(), []);
 
-  // A ticking clock only while the visitor is choosing: that is the part of the
-  // visit they control, and the code runs out if they wander off mid-choice.
   useEffect(() => {
     if (stage !== "file" && stage !== "preview") return;
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -254,12 +237,6 @@ export function BatchMobileFlow({
 
   useEffect(() => {
     let active = true;
-    // Spending the QR code is a one-shot server operation: a second attempt is
-    // answered with 409, which reads to the visitor as "someone else already
-    // used this code". React deliberately runs an effect twice in development,
-    // and a fast remount would do the same in production, so the attempt is
-    // started once per session and every later run of this effect awaits that
-    // same promise instead of spending a code that is already claimed.
     if (claimAttempt.current?.sessionId !== sessionId) {
       claimAttempt.current = { sessionId, outcome: claimOnce(sessionId) };
     }
@@ -312,8 +289,6 @@ export function BatchMobileFlow({
         ) {
           throw new BatchSelectionError(copy.batchTooLarge);
         }
-        // The whole selection is judged together. Ten files that each clear the
-        // limit on their own are still ten files' worth of paper.
         const quota = decidePrintQuota(next.map(({ validated }) => quotaDocument(validated)));
         if (quota.kind !== "allowed") {
           for (const item of next) item.validated.bytes.fill(0);
@@ -424,11 +399,6 @@ export function BatchMobileFlow({
     setStage("error");
   }, [cancelClaim, claimed, clearDocuments, documents, mobileToken, sessionId]);
 
-  // The same three steps the home page and the big screen name. Scanning is
-  // already done by the time this page exists. "Take your paper" lights only
-  // once the paper is out: while the file is still sending or printing the
-  // visitor is still on the second step, and telling them to collect output
-  // that does not exist yet would send them to an empty printer.
   const step = stage === "complete" ? 3 : 2;
   const supportsHancom = supportsHwp || supportsHwpx;
   const hancomLabel = hancomFormatLabel(supportsHwp, supportsHwpx);
@@ -850,17 +820,11 @@ function printableKind(kind: ValidatedMobileFile["fileKind"]): PrintableFileKind
   return kind;
 }
 
-/** Page count, in the visitor's language, only where it tells them something. */
 function pagesDetail(validated: ValidatedMobileFile, copy: PrintBatchCopy): string | undefined {
   if (validated.fileKind !== "pdf" || validated.pageCount < 2) return undefined;
   return formatBatchCopy(copy.pages, validated.pageCount);
 }
 
-/**
- * Waiting, drawn as what is actually happening: the sheet going into the
- * printer while it is sent, coming out while it prints. A lost connection is
- * not drawn as progress, because nobody knows whether anything is moving.
- */
 function ProgressState({
   phase,
   text,
@@ -871,7 +835,6 @@ function ProgressState({
   phase: "sending" | "printing" | "reconnecting";
   text: string;
   note: string;
-  /** What happens after the print button, so the wait has visible stages. */
   steps: readonly string[];
   current: number;
 }) {
@@ -915,17 +878,13 @@ function SingleAction({
   icon?: "info" | "success" | "error";
   title: string;
   body: string;
-  /** A quieter second line: what to do next time. */
   note?: string;
   action?: string;
   onAction?: () => void;
-  /** A way out that is a place, not a command. */
   link?: { href: string; label: string };
 }) {
   const Icon =
     icon === "success" ? CheckCircle2 : icon === "error" ? TriangleAlert : CircleQuestionMark;
-  // A message that carries its own next step reads as a title and then an
-  // instruction, rather than one paragraph set at headline size.
   const [heading, instruction] = body ? [title, body] : splitFirstSentence(title);
   return (
     <section className="mobile-step mobile-step--single">
