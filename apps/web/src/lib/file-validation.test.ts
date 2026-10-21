@@ -98,7 +98,6 @@ describe("file validation", () => {
   });
 
   it("accepts a photo whose decoded axes are swapped by its EXIF orientation", () => {
-    // A phone photo held sideways: 4032x3024 in the file, decoded as 3024x4032.
     const stored = { width: 4032, height: 3024 };
     expect(decodedDimensionsMatch(stored, { width: 3024, height: 4032 })).toBe(true);
     expect(decodedDimensionsMatch(stored, stored)).toBe(true);
@@ -111,7 +110,6 @@ describe("file validation", () => {
       expect.objectContaining({ code: "damagedFile" }),
     );
 
-    // `/#4fpenAction` is the same PDF name, written to slip past a substring scan.
     const escaped = new TextEncoder().encode("%PDF-1.7\n1 0 obj<</#4fpenAction 2 0 R>>endobj\n");
     await expect(validatePdf(escaped)).rejects.toThrow(
       expect.objectContaining({ code: "damagedFile" }),

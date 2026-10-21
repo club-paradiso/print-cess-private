@@ -37,12 +37,7 @@ import {
 import { safeFileName, safeMediaType, utf8Length } from "./drop-file-name";
 import type { FileSink, SaveOutcome } from "./drop-save";
 
-/** Parts authorized and transferred together. Matches the API's batch ceiling. */
 const BATCH_SIZE = 8;
-/**
- * Parallel part transfers. Three keeps a phone's radio busy without starving a
- * shared connection or holding four chunks in memory at once.
- */
 const CONCURRENCY = 3;
 const MAX_ATTEMPTS = 4;
 const RETRY_BASE_MS = 700;
@@ -58,7 +53,6 @@ export class DropTransferError extends Error {
 }
 
 export type DropProgress = {
-  /** Plaintext bytes moved so far, across every file in the transfer. */
   transferredBytes: number;
   totalBytes: number;
   completedParts: number;
@@ -79,12 +73,6 @@ export type PreparedSelection = {
   partCount: number;
 };
 
-/**
- * The ceilings a selection is measured against. They default to what the
- * protocol allows and are narrowed by whatever this deployment publishes, so a
- * transfer is refused on the phone rather than after several minutes of
- * uploading into a server that was always going to say no.
- */
 export type DropLimits = {
   maximumTotalBytes: number;
   maximumFileCount: number;
@@ -99,13 +87,6 @@ export const PROTOCOL_DROP_LIMITS: DropLimits = {
 
 const AES_GCM_IV_BYTES = 12;
 
-/**
- * How large the encrypted file list will be once it is sealed and base64url
- * encoded. Twenty long Korean or emoji names cost roughly three bytes each in
- * UTF-8 and then grow by a further third in base64, which is how a selection
- * the sender was told was fine used to fail at the server with nothing useful
- * to say. Measuring it here turns that into a sentence about the file names.
- */
 export function sealedManifestBytes(files: readonly DropManifestFile[]): number {
   const plaintext = utf8Length(JSON.stringify({ protocolVersion: 1, files }));
   return Math.ceil((AES_GCM_IV_BYTES + plaintext + DROP_PART_TAG_BYTES) / 3) * 4;
@@ -145,22 +126,11 @@ export function prepareSelection(
   return { files: accepted, manifestFiles, totalBytes, partCount };
 }
 
-/**
- * Encrypts and uploads a selection, one chunk at a time. Nothing larger than a
- * single chunk is ever held in memory, so a two-gigabyte transfer costs the
- * same working set as an eight-megabyte one.
- */
 export async function sendDrop(
   selection: PreparedSelection,
   options: {
     signal?: AbortSignal;
     onProgress?: (progress: DropProgress) => void;
-    /**
-     * Fires once the service holds the transfer record, which is the earliest
-     * moment the code can be shown without a fast receiver being told it is
-     * invalid. The upload continues behind it, so the other phone can scan and
-     * wait instead of watching this one's progress bar.
-     */
     onDropCreated?: (created: SendResult) => void;
   } = {},
 ): Promise<SendResult> {
@@ -223,9 +193,6 @@ export async function sendDrop(
           },
           options.signal,
           async () => {
-            // A signed URL can expire mid-retry; ask for a fresh one. The next
-            // attempt resolves from this map instead of closing over the stale
-            // operation that failed.
             const refreshed = await authorizeDropParts(created.dropId, ownerToken, [
               entry.partIndex,
             ]);
@@ -269,20 +236,10 @@ export type ReceivedDrop = {
   expiresAt: number;
 };
 
-/**
- * A transfer the receiving phone can already see but not yet read: the code is
- * correct and the record exists, and the sending phone is still uploading.
- */
 export type PendingDrop = { state: "collecting"; keys: DropKeys; expiresAt: number };
 
 export type InspectedDrop = ({ state: "ready" } & ReceivedDrop) | PendingDrop;
 
-/**
- * Reads the file list without downloading a byte of content, or reports that
- * the sender has not finished yet. Deriving the keys is the expensive half, so
- * a caller waiting for a pending transfer passes them back in rather than
- * stretching the same code every few seconds.
- */
 export async function inspectDrop(
   rawCode: string | DropKeys,
   options: { signal?: AbortSignal } = {},
@@ -310,8 +267,6 @@ export async function inspectDrop(
   try {
     manifest = await decryptDropManifest(keys, view.manifest, view.fileCount);
   } catch {
-    // The identifier matched but the content key did not: the code was mistyped
-    // in a way that still produced a valid-looking identifier, or it is stale.
     throw new DropTransferError("dropCodeNotFound");
   }
   return {
@@ -325,16 +280,6 @@ export async function inspectDrop(
   };
 }
 
-/**
- * Downloads, authenticates, and writes one file into the destination the
- * visitor already chose. Chunks are streamed straight into the sink, so the
- * phone never holds more than one chunk plus whatever the sink has not yet
- * flushed — a two-gigabyte file costs the same working set as an eight-
- * megabyte one.
- *
- * The outcome comes back from the sink rather than being assumed here, because
- * only the sink knows whether a file was written or a download was started.
- */
 export async function receiveDropFile(
   drop: ReceivedDrop,
   fileIndex: number,
@@ -370,8 +315,6 @@ export async function receiveDropFile(
       );
       const byIndex = new Map(operations.map((operation) => [operation.index, operation]));
 
-      // Written strictly in order: the writer is a stream, so a parallel fetch
-      // would have to buffer whole chunks to restore ordering anyway.
       for (const chunkIndex of chunkIndexes) {
         const partIndex = dropPartIndex(drop.manifest.files, fileIndex, chunkIndex);
         if (!byIndex.has(partIndex)) throw new DropTransferError("dropDownloadFailed");
@@ -456,7 +399,6 @@ async function encryptPlannedChunk(
   try {
     plaintext = new Uint8Array(await slice.arrayBuffer());
   } catch {
-    // Typically the file was moved or the photo library revoked the handle.
     throw new DropTransferError("dropFileUnreadable");
   }
   if (plaintext.byteLength !== entry.plaintextBytes) {
@@ -488,8 +430,6 @@ async function putCiphertext(
   await viaStorageRoute(operation, signal, async (url) => {
     const response = await fetch(url, {
       method: "PUT",
-      // `slice` copies through the buffer rather than element by element, which
-      // matters when the element count is eight million.
       headers: operation.headers,
       body: bytes.slice().buffer,
       signal: combineSignals(signal, 180_000),
@@ -518,18 +458,11 @@ async function getCiphertext(operation: DropOperation, signal?: AbortSignal): Pr
 const STORAGE_ROUTE_KEY = "print-cess:storage-route";
 let relayPreferred: boolean | null = null;
 
-/**
- * Asks every later part in this tab to travel through this origin rather than
- * the storage host. The work-computer page sets it before the visitor starts,
- * because managed networks commonly approve the Print-cess address and block
- * the storage host, and a part that fails there first costs a retry cycle.
- */
 export function preferSameOriginStorageRoute(): void {
   relayPreferred = true;
   try {
     window.sessionStorage.setItem(STORAGE_ROUTE_KEY, "relay");
   } catch {
-    // Storage can be blocked by policy; the in-memory preference still holds.
   }
 }
 
@@ -543,13 +476,6 @@ function isRelayPreferred(): boolean {
   return relayPreferred;
 }
 
-/**
- * Runs one signed part operation, first against the storage host and, if the
- * network refuses it, against the same-origin relay. A relay that works is
- * remembered for the rest of the session so the remaining parts skip the
- * blocked route. A failure the relay shares — an expired credential, a missing
- * part — still reaches the caller's retry logic unchanged.
- */
 async function viaStorageRoute<T>(
   operation: DropOperation,
   signal: AbortSignal | undefined,
@@ -568,13 +494,6 @@ async function viaStorageRoute<T>(
   }
 }
 
-/**
- * What a filtering proxy, DLP gateway or allowlist does to a request it will
- * not carry: a network error (often a blocked CORS preflight or a redirect to
- * a block page), a stalled connection, or a refusal status from the proxy
- * itself. Signature failures also arrive as 4xx; the relay reproduces those
- * and they then fall through to the ordinary retry path.
- */
 function isRouteFailure(error: unknown): boolean {
   if (error instanceof TypeError) return true;
   if (error instanceof DOMException) return error.name === "TimeoutError";
@@ -586,7 +505,6 @@ function isRouteFailure(error: unknown): boolean {
   return false;
 }
 
-/** Test seam: forget the remembered route between cases. */
 export function resetStorageRouteForTests(): void {
   relayPreferred = null;
 }
@@ -607,11 +525,6 @@ async function runWithConcurrency<T>(
   await Promise.all(runners);
 }
 
-/**
- * Retries the transient half of the failure space — lost signal, an expired
- * signed URL, a provider hiccup — and gives up immediately on anything the
- * caller cannot fix by trying again, such as an expired transfer.
- */
 async function withRetry<T>(
   action: () => Promise<T>,
   signal?: AbortSignal,
@@ -637,10 +550,6 @@ async function withRetry<T>(
 }
 
 function isFatalStatus(status: number, canRefreshBlobCredential = false): boolean {
-  // A 401 from our JSON API is an owner/auth failure and must stop immediately.
-  // A 401 from a signed blob operation can simply mean that its short-lived
-  // credential expired; callers that supply `refresh` are precisely those blob
-  // operations, so let them obtain a replacement before the next attempt.
   if (status === 401 && canRefreshBlobCredential) return false;
   return status === 400 || status === 401 || status === 404 || status === 409 || status === 410;
 }

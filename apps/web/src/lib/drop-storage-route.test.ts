@@ -11,11 +11,6 @@ const STORAGE = "https://store1.private.blob.vercel-storage.com";
 
 type Seen = { method: string; url: string };
 
-/**
- * A fake deployment behind a managed network: the Print-cess origin answers,
- * and the storage host is either reachable or refused the way a filtering
- * proxy refuses it — a network error before any response.
- */
 function stubNetwork(storageBlocked: boolean): Seen[] {
   const seen: Seen[] = [];
   vi.stubGlobal("fetch", async (input: string, init: RequestInit = {}) => {
@@ -86,7 +81,6 @@ describe("storage route on managed networks", () => {
     await sendDrop(prepareSelection(files(1)));
     await sendDrop(prepareSelection(files(1)));
     const puts = seen.filter((request) => request.method === "PUT");
-    // The first part discovers the block; every part after that skips it.
     expect(puts.map((request) => request.url.startsWith(STORAGE))).toEqual([true, false, false]);
     expect(puts[1]?.url).toBe("/relay/blob/drops/x/0?vercel-blob-signature=s0");
   });
