@@ -7,9 +7,13 @@ import { requestLocale } from "@/lib/request-locale";
 export default async function BrowserKioskPage({
   searchParams,
 }: {
-  searchParams: Promise<{ printing?: string | string[]; sound?: string | string[] }>;
+  searchParams: Promise<{
+    printing?: string | string[];
+    sound?: string | string[];
+  }>;
 }) {
-  if (process.env.NODE_ENV === "production" && !isBrowserKioskEnabled()) notFound();
+  if (process.env.NODE_ENV === "production" && !isBrowserKioskEnabled())
+    notFound();
   const { printing, sound } = await searchParams;
   const locale = await requestLocale();
   // `?sound=off` for a counter where a completion tone would carry further than
