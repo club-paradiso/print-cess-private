@@ -158,15 +158,20 @@ machinery has **started a download** and nothing more.
 
 | Destination               | Chosen when                                    | The screen says     |
 | ------------------------- | ---------------------------------------------- | ------------------- |
-| File the visitor picked   | `showSaveFilePicker` exists                    | Saved               |
-| Folder the visitor picked | `showDirectoryPicker` exists, for "save all"   | Saved               |
-| Private origin storage    | OPFS available; staged, then downloaded        | Download started    |
-| Memory                    | Nothing else available                         | Download started    |
-| System share sheet        | `navigator.canShare({ files })` accepts a file | Sent to another app |
+| File picked for direct write | Explicit `preferFilePicker: true` (not used by default receive UI) | Saved               |
+| Folder the visitor picked   | Explicit "Save all to folder" action, when supported               | Saved               |
+| Private origin storage      | Default download with OPFS; staged, then downloaded               | Download started    |
+| Memory                      | Default download when OPFS is unavailable                         | Download started    |
+| System share sheet          | `navigator.canShare({ files })` accepts a file                    | Sent to another app |
 
-Permission is obtained inside the user activation. By the time a multi-gigabyte
-file finishes arriving, the activation that would have allowed a picker to open
-is long gone, so a destination asked for later never opens at all.
+Normal "Save" and "Save all" on `/receive` use ordinary browser downloads,
+including on Chromium desktop. The user may separately select "Save all to folder"
+if they knowingly want to grant write permission to a chosen directory.
+
+For direct-write modes, permission is obtained inside the user activation. By
+the time a multi-gigabyte file finishes arriving, the activation that would
+have allowed a picker to open is long gone, so a destination asked for later
+never opens at all.
 
 Private origin storage is **not** a user-visible location. It exists to keep a
 large download off the JavaScript heap; the staged copy is handed to the
