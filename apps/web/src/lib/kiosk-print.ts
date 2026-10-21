@@ -37,12 +37,6 @@ export async function printArtifact(artifact: PrintArtifact): Promise<void> {
   printFrame(await preparePrintFrame(artifact));
 }
 
-/**
- * Prints several artifacts in the visitor's order. Every document is loaded
- * into its own frame before the first print dialog opens, so a document that
- * cannot load fails the batch while nothing has been printed yet: a visitor
- * who resends after that failure never gets the earlier pages twice.
- */
 export async function printArtifacts(artifacts: readonly PrintArtifact[]): Promise<void> {
   const frames: HTMLIFrameElement[] = [];
   try {
@@ -56,15 +50,12 @@ export async function printArtifacts(artifacts: readonly PrintArtifact[]): Promi
     try {
       printFrame(frame);
     } catch (error) {
-      // Only `print()` itself failing lands here, after earlier documents may
-      // already have printed. The unprinted frames are not left behind.
       for (const remaining of frames.slice(index + 1)) remaining.remove();
       throw error;
     }
   }
 }
 
-/** Loads one artifact into a hidden frame, removing the frame if it cannot load. */
 async function preparePrintFrame(artifact: PrintArtifact): Promise<HTMLIFrameElement> {
   if (artifact.fileKind === "hwp" || artifact.fileKind === "hwpx") {
     throw new Error("HWP/HWPX printing requires the configured native Windows kiosk");
@@ -86,10 +77,6 @@ async function preparePrintFrame(artifact: PrintArtifact): Promise<HTMLIFrameEle
   return frame;
 }
 
-/**
- * Opens the print dialog for a loaded frame. The frame outlives `print()` long
- * enough for the dialog to read it, then goes.
- */
 function printFrame(frame: HTMLIFrameElement): void {
   try {
     const printableWindow = frame.contentWindow;

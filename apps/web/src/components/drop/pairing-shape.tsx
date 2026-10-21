@@ -15,12 +15,6 @@ export function shapeLabel(shape: PairingShape, text: Text): string {
   return text(SHAPE_LABEL_KEYS[shape]);
 }
 
-/**
- * Drawn rather than written, and never coloured differently from its
- * neighbours: the two humans are comparing outlines across two screens whose
- * brightness and colour balance will not match, so shape is the only signal
- * that survives the comparison.
- */
 export function PairingShapeMark({ shape }: { shape: PairingShape }) {
   return (
     <svg viewBox="0 0 48 48" className="pairing-shape__mark" aria-hidden="true" focusable="false">

@@ -6,10 +6,6 @@ export type DropOperation = {
   index: number;
   method: "PUT" | "GET";
   url: string;
-  /**
-   * The same signed operation addressed through this origin, offered when the
-   * deployment can relay ciphertext for networks that block the storage host.
-   */
   relayUrl?: string;
   headers: Record<string, string>;
   expiresAt: number;
@@ -58,11 +54,6 @@ function ownerHeaders(ownerToken: string, json = true): Record<string, string> {
   };
 }
 
-/**
- * The published product limits, fetched before a selection is measured so the
- * sender is refused on their own phone rather than after a long upload. It
- * carries nothing about the infrastructure and needs no credential.
- */
 export async function getDropCapabilities(signal?: AbortSignal): Promise<DropCapabilities> {
   return dropJson<DropCapabilities>("/api/drops/capabilities", { method: "GET" }, 10_000, signal);
 }
@@ -141,11 +132,6 @@ export async function openDrop(dropId: string, signal?: AbortSignal): Promise<Dr
   );
 }
 
-/**
- * Tells the sending phone that a receiver's own flow finished handling every
- * file. It carries no identity, no file name, and no destination — only that
- * somebody holding the transfer code got to the end.
- */
 export async function reportDropDelivered(dropId: string): Promise<void> {
   await dropJson(`/api/drops/${dropId}/receipt`, {
     method: "POST",

@@ -119,8 +119,6 @@ const copy = {
 export default async function WorkstationPage() {
   const locale = await requestLocale();
   const text = locale === "ko" ? copy.ko : copy.en;
-  // Only promise a single-origin allowlist when this deployment can relay
-  // ciphertext; otherwise browsers still reach the storage host directly.
   const policyItems = [
     ...text.privacyItems,
     relayStoreId() ? text.allowlistRelay : text.allowlistDirect,

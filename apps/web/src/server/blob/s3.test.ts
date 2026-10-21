@@ -120,7 +120,6 @@ describe("S3BlobTransport metadata and cleanup", () => {
   it("refuses to delete when the committed ETag no longer matches", async () => {
     mocks.send.mockResolvedValue({ ContentLength: 512, ETag: '"current"' });
     await expect(transport().delete(PATHNAME, "stale")).rejects.toMatchObject({ status: 409 });
-    // Only the HEAD probe ran; no DeleteObject was sent.
     expect(mocks.send).toHaveBeenCalledTimes(1);
   });
 

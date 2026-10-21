@@ -18,15 +18,8 @@ import {
   type ScanLabScene,
 } from "./scenes";
 
-/** The live camera inspects frames at this size (`live-document-camera.tsx`). */
 const CAMERA_ANALYSIS_EDGE = 820;
 
-/**
- * One scene's result, in the benchmark observation format of
- * `benchmarks/scanner/README.md`, plus the extra facts this harness can check
- * because it knows the answer: whether a sheet was found at all, the corrected
- * page's proportions, and how much desk bled into its border.
- */
 export type ScanLabObservation = {
   id: string;
   label: string;
@@ -45,11 +38,8 @@ export type ScanLabObservation = {
   ocrRequested: false;
   externalOcrUpload: false;
   generativeReconstructionUsed: false;
-  /** min(w, h) / max(w, h) of the corrected page; A4 is 0.707. */
   outputAspect?: number;
-  /** |outputAspect - A4| / A4, in percent. */
   aspectErrorPercent?: number;
-  /** Share of the detected crop that lies outside the true page (desk in the PDF). */
   borderBleed?: number;
 };
 
@@ -81,7 +71,6 @@ function downscale(canvas: HTMLCanvasElement, maxEdge: number): HTMLCanvasElemen
   return output;
 }
 
-/** Proportions of the corrected page. */
 async function measureAspect(blob: Blob) {
   const bitmap = await createImageBitmap(blob);
   try {
@@ -95,7 +84,6 @@ async function measureAspect(blob: Blob) {
   }
 }
 
-/** True when `point` is inside the convex quad (either winding). */
 function insideConvex(quad: readonly ScanPoint[], point: ScanPoint): boolean {
   let sign = 0;
   for (let index = 0; index < quad.length; index += 1) {
@@ -110,12 +98,6 @@ function insideConvex(quad: readonly ScanPoint[], point: ScanPoint): boolean {
   return true;
 }
 
-/**
- * Share of the detected crop that lies outside the true page, measured on a
- * pixel-space grid against the quad the scene was drawn with. A colour or
- * brightness test cannot do this: a beige desk is as light as paper once the
- * illumination is normalized, so desk inside the crop would pass unseen.
- */
 function cropBleed(truth: DocumentQuad, detected: DocumentQuad): number {
   const toPixels = (quad: DocumentQuad) =>
     quad.map((point) => ({ x: point.x * SCENE_WIDTH, y: point.y * SCENE_HEIGHT }));
@@ -150,7 +132,6 @@ export async function runScanLabScene(
   const rendered = renderScanScene(scene);
   const file = await canvasToJpegFile(rendered.canvas, `${scene.id}.jpg`);
 
-  // The gallery path: the same calls `scan-composer.tsx` makes for a picked photo.
   const started = performance.now();
   const detection = await detectDocument(file);
   const processed = await processDocument(file, {
@@ -161,7 +142,6 @@ export async function runScanLabScene(
   const pdf = buildScannedPdf([{ bytes, width: processed.width, height: processed.height }]);
   const processingMs = performance.now() - started;
 
-  // The camera path: the frame the live viewfinder inspects before it fires.
   const inspection = await inspectDocumentFrame(downscale(rendered.canvas, CAMERA_ANALYSIS_EDGE));
 
   const geometryScored =

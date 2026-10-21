@@ -7,7 +7,6 @@ function progress(transferredBytes: number, totalBytes: number): DropProgress {
   return { transferredBytes, totalBytes, completedParts: 0, totalParts: 1 };
 }
 
-/** Builds a steady stream of samples at a fixed byte rate. */
 function steady(bytesPerSecond: number, seconds: number, from = 0): ThroughputSample[] {
   let samples: ThroughputSample[] = [];
   for (let second = 0; second <= seconds; second += 1) {
@@ -28,7 +27,6 @@ describe("estimateMinutesRemaining", () => {
   });
 
   it("estimates from recent throughput", () => {
-    // 1 MB/s with 120 MB left is two minutes.
     const samples = steady(1_000_000, 5);
     const remaining = estimateMinutesRemaining(
       samples,
@@ -48,7 +46,6 @@ describe("estimateMinutesRemaining", () => {
   });
 
   it("withholds an estimate nobody would act on", () => {
-    // A trickle with gigabytes left produces an hours-long number.
     const samples = steady(10, 5);
     expect(estimateMinutesRemaining(samples, progress(50, 5_000_000_000))).toBeNull();
   });
@@ -57,8 +54,6 @@ describe("estimateMinutesRemaining", () => {
 describe("recordSample", () => {
   it("keeps a usable baseline even when every sample is old", () => {
     const samples = steady(1_000_000, 60);
-    // Sixty seconds of samples exceeds the twenty-second window, yet enough
-    // must survive to still measure a rate.
     expect(samples.length).toBeGreaterThanOrEqual(3);
     expect(estimateMinutesRemaining(samples, progress(60_000_000, 180_000_000))).toBe(2);
   });

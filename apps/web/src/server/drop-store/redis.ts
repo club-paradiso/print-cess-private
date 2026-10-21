@@ -41,12 +41,6 @@ redis.call('ZREM', KEYS[2], ARGV[1])
 return 1
 `;
 
-/**
- * Drop storage on any Redis that speaks EVAL. Both hosted providers reach this
- * one implementation through `RedisScriptClient`, so the atomic contract — a
- * create that never overwrites, and revision-checked updates — is identical on
- * Upstash and on a standard Redis server.
- */
 export class RedisDropStore implements DropStore {
   public constructor(private readonly redis: RedisScriptClient) {}
 
@@ -111,7 +105,6 @@ export class RedisDropStore implements DropStore {
     for (const dropId of dropIds) {
       const raw = await this.redis.get(dropKey(dropId));
       if (!raw) {
-        // The record's own TTL already removed it; drop the index entry too.
         await this.redis.zrem(DROP_DUE_KEY, dropId);
         continue;
       }

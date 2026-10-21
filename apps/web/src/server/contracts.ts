@@ -95,19 +95,8 @@ export interface SessionStore {
 
 export type DropPartCommit = { index: number; size: number; etag?: string };
 
-/**
- * The three things the service is allowed to learn about the receiving side,
- * each recorded at the moment it is actually observed rather than inferred
- * from one another. They are what keeps the sending screen from claiming a
- * delivery when all that happened was a signed URL being handed out.
- */
 export type DropReceiverEvent = "opened" | "downloading" | "delivered";
 
-/**
- * Storage for file hand-offs. Deliberately separate from `SessionStore`: a drop
- * has no kiosk, no printer, and many parts, so folding it into the print
- * session state machine would only weaken both.
- */
 export interface DropStore {
   create(drop: DropRecord, retentionMs: number): Promise<void>;
   get(dropId: string): Promise<DropRecord | null>;
@@ -123,16 +112,7 @@ export interface DropStore {
   listExpired(now: number, limit: number): Promise<DropRecord[]>;
 }
 
-/**
- * Short-lived escrow for the optional two-digits-and-shape hand-off. A redeem
- * attempt always consumes a live record, including when the shape is wrong.
- */
 export interface PairingStore {
-  /**
-   * Claims one unused two-digit code. The code is chosen by the store rather
-   * than the caller so that the check for "already taken" and the write cannot
-   * be separated by another sender doing the same thing.
-   */
   claim(
     pairing: Omit<PairingRecord, "code">,
     candidates: readonly string[],
@@ -153,11 +133,6 @@ export type SignedBlobOperation = {
 export type BlobMetadata = { etag: string; size: number };
 
 export type UploadAuthorizationOptions = {
-  /**
-   * A print upload is single-use and must never be replaced. A drop part is
-   * retried whenever a phone loses signal mid-chunk, so its authorization has
-   * to allow the same path to be written again.
-   */
   allowOverwrite?: boolean;
 };
 
@@ -175,10 +150,5 @@ export interface BlobTransport {
 
 export interface CleanupScheduler {
   schedule(sessionId: string, dueAt: number): Promise<void>;
-  /**
-   * Hosted schedulers can enqueue a generic sweep for data that is not tied to
-   * one print session, such as phone-to-phone drops. Providers with their own
-   * recurring worker intentionally omit this optional hook.
-   */
   scheduleSweep?(dueAt: number, limit?: number): Promise<void>;
 }

@@ -289,7 +289,6 @@ public sealed class KioskSessionClient
             else if ((name == "hwpx" || name == "hwp" || name == "bundle") &&
                      value == "1" && capabilities.Add(name))
             {
-                // Optional capability marker. It is advisory and never weakens kiosk validation.
             }
             else
             {

@@ -12,8 +12,6 @@ async function openMobileAtFilePicker(
 
   const mobile = await context.newPage();
   await mobile.goto(sessionUrl);
-  // Straight to the choice: the language screen and the guide screen no longer
-  // stand between scanning a code and picking a document.
   await expect(mobile.getByRole("heading", { name: "Pick files to print" })).toBeVisible({
     timeout: 20_000,
   });

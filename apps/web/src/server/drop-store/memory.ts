@@ -12,10 +12,6 @@ import {
 
 type StoredDrop = { drop: DropRecord; retentionExpiresAt: number };
 
-/**
- * Development and single-process store. Every read and write hands back a clone
- * so a caller can never mutate stored state by holding on to a returned record.
- */
 export class MemoryDropStore implements DropStore {
   readonly #drops = new Map<string, StoredDrop>();
 

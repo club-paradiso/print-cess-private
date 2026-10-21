@@ -28,7 +28,6 @@ describe("safeFileName", () => {
   });
 
   it("removes the direction overrides that disguise one extension as another", () => {
-    // Written out, this reads as a PNG on screen while ending in `.exe`.
     const spoofed = `invoice\u202egnp.exe`;
     expect(safeFileName(spoofed)).toBe("invoice_gnp.exe");
   });
@@ -55,8 +54,6 @@ describe("safeFileName", () => {
     expect(safeFileName("CON.txt")).toBe("_CON.txt");
     expect(safeFileName("nul")).toBe("_nul");
     expect(safeFileName("com4.hwp")).toBe("_com4.hwp");
-    // Only the exact device names are reserved; ordinary words that begin the
-    // same way are left alone.
     expect(safeFileName("console.log")).toBe("console.log");
     expect(safeFileName("communication.pdf")).toBe("communication.pdf");
   });
@@ -79,8 +76,6 @@ describe("safeFileName", () => {
     ]) {
       const bounded = safeFileName(`${sample}.dat`);
       expect(utf8Length(bounded)).toBeLessThanOrEqual(MAX_DROP_FILE_NAME_BYTES);
-      // The manifest schema still measures UTF-16 length, so the byte budget
-      // has to satisfy that limit as well.
       expect(bounded.length).toBeLessThanOrEqual(MAX_DROP_FILE_NAME_LENGTH);
       expect(bounded.endsWith(".dat")).toBe(true);
     }
@@ -89,11 +84,7 @@ describe("safeFileName", () => {
   it("never cuts a name in the middle of a character or an emoji", () => {
     const bounded = safeFileName(`${"👨‍👩‍👧‍👦".repeat(50)}.png`);
     expect(bounded).not.toContain("\ufffd");
-    // A lone surrogate would survive `JSON.stringify` but not a round trip
-    // through UTF-8, which is exactly how the manifest travels.
     expect(new TextDecoder().decode(new TextEncoder().encode(bounded))).toBe(bounded);
-    // The family emoji is one grapheme of eleven UTF-16 units; a cut inside it
-    // would leave a stray person or a trailing zero-width joiner.
     expect(bounded.endsWith("\u200d.png")).toBe(false);
   });
 

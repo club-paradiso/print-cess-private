@@ -117,7 +117,6 @@
   height: 24px;
 }
 
-/* The icon repeats the headline's verdict in colour; the words carry it first. */
 .workstation-readiness--ready .workstation-readiness__headline svg {
   color: var(--pc-success);
 }

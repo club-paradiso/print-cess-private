@@ -13,12 +13,6 @@ import { getRuntime, signedExpiry } from "@/server/runtime";
 
 export const runtime = "nodejs";
 
-/**
- * Hands the sending phone a small batch of signed upload URLs. Batching keeps a
- * multi-gigabyte transfer to a handful of round trips per group of parts, and
- * re-authorizing an index is always allowed so a part interrupted by a lost
- * signal can simply be sent again.
- */
 export async function POST(request: Request, context: { params: Promise<{ dropId: string }> }) {
   try {
     const server = getRuntime();

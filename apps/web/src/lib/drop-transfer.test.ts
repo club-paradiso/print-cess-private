@@ -15,8 +15,6 @@ import {
 } from "./drop-transfer";
 
 function fakeFile(name: string, size: number): File {
-  // Building a real multi-megabyte File would allocate for nothing; only the
-  // name, size, and type are read while a selection is prepared.
   return { name, size, type: "application/octet-stream" } as File;
 }
 
@@ -53,9 +51,6 @@ describe("prepareSelection", () => {
 
 describe("prepareSelection limits", () => {
   it("accepts many tiny files, which cost one part each", () => {
-    // A deployment configured for sixty-four megabytes used to refuse twenty
-    // one-kilobyte files, because a part ceiling derived from a byte ceiling
-    // said eight parts and twenty files need twenty.
     const files = Array.from({ length: MAX_DROP_FILES }, (_, index) =>
       fakeFile(`note-${index}.txt`, 1024),
     );
@@ -74,7 +69,6 @@ describe("prepareSelection limits", () => {
       maximumFileCount: MAX_DROP_FILES,
       maximumParts: MAX_DROP_PARTS,
     };
-    // Exactly at the ceiling is allowed; one byte past it is not.
     expect(() => prepareSelection([fakeFile("a.bin", 64 * 1024 * 1024)], limits)).not.toThrow();
     expect(() => prepareSelection([fakeFile("a.bin", 64 * 1024 * 1024 + 1)], limits)).toThrow(
       /dropTooLarge/u,
@@ -82,11 +76,6 @@ describe("prepareSelection limits", () => {
   });
 
   it("keeps the worst selection a person can choose inside the manifest ceiling", () => {
-    // This is the case that used to fail at the server with nothing useful to
-    // say: twenty long Korean names cost roughly three bytes a character in
-    // UTF-8 and a third again in base64, which overflowed a ceiling the phone
-    // had already told the sender was fine. Budgeting names in bytes makes the
-    // worst case fit by construction rather than by luck.
     for (const script of ["가", "文", "م", "क", "🎉", "a"]) {
       const files = Array.from({ length: MAX_DROP_FILES }, (_, index) =>
         fakeFile(`${script.repeat(400)}-${index}.hwpx`, 1024),
@@ -97,8 +86,6 @@ describe("prepareSelection limits", () => {
   });
 
   it("still refuses a file list that would not fit, however it got that large", () => {
-    // The guard above is structural, so this checks the estimator itself: a
-    // manifest built past the ceiling has to be measured as past it.
     const oversized = Array.from({ length: MAX_DROP_FILES }, (_, index) => ({
       name: `${"가".repeat(400)}-${index}.hwpx`,
       size: 1024,
@@ -129,8 +116,6 @@ describe("prepareSelection limits", () => {
     const selection = prepareSelection([
       { ...file, type: `application/${"x".repeat(400)}` } as File,
     ]);
-    // Anything that is not shaped like a media type is dropped rather than
-    // truncated into something that looks real but is not.
     expect(selection.manifestFiles[0]?.type).toBe("");
   });
 });

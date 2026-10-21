@@ -63,16 +63,12 @@ export function getRuntime(): ServerRuntime {
         : config.sessionProvider === "railway-postgres"
           ? new RailwayPostgresSessionStore()
           : new UpstashSessionStore();
-    // Drops follow whichever backing service already holds session state, so a
-    // deployment never has to provision or pay for a second one.
     const drops: DropStore =
       config.sessionProvider === "railway-redis"
         ? new RedisDropStore(createNodeRedisScriptClient())
         : config.sessionProvider === "railway-postgres"
           ? new RailwayPostgresDropStore()
           : new RedisDropStore(new UpstashScriptClient());
-    // Pairings are the same kind of short-lived rendezvous state as sessions,
-    // so they follow the service that already holds them.
     const pairings: PairingStore =
       config.sessionProvider === "railway-redis"
         ? new RedisPairingStore(createNodeRedisScriptClient())
@@ -244,7 +240,6 @@ export async function deleteDrop(runtime: ServerRuntime, drop: DropRecord): Prom
     try {
       await runtime.blobs.delete(dropPartPath(drop.dropId, index));
     } catch (error) {
-      // A part that was authorized but never uploaded is simply absent.
       if (error instanceof ServiceError && error.status === 404) continue;
       if (!part) continue;
       throw error;

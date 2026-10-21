@@ -10,11 +10,6 @@ import { uploadedPartCount } from "@/server/drop-store/transitions";
 
 export const runtime = "nodejs";
 
-/**
- * Commits a batch of uploaded parts. Each one is checked against the storage
- * provider rather than trusted from the request, so a truncated upload is
- * rejected here instead of failing much later on the receiving phone.
- */
 export async function POST(request: Request, context: { params: Promise<{ dropId: string }> }) {
   try {
     const server = getRuntime();

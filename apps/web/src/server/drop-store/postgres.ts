@@ -15,12 +15,6 @@ const TABLE_NAME = "print_cess_drop_state_v1";
 
 type DropRow = { drop: unknown; retention_expires_at: string | number };
 
-/**
- * Drop storage on Railway PostgreSQL. Every mutation runs inside one
- * transaction that takes an advisory lock on the drop identifier first, so a
- * phone uploading eight parts in parallel cannot interleave two read-modify-
- * write cycles over the same record.
- */
 export class RailwayPostgresDropStore implements DropStore {
   readonly #executor: PostgresExecutor;
   #schema: Promise<void> | null = null;
@@ -146,7 +140,6 @@ export class RailwayPostgresDropStore implements DropStore {
         ON ${TABLE_NAME} (expires_at, drop_id)
       `);
     })().catch((error: unknown) => {
-      // A failed migration must not be cached as "done" for the process life.
       this.#schema = null;
       throw error;
     });

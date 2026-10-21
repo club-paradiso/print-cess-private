@@ -8,19 +8,8 @@ import {
 } from "./pairing-helpers";
 
 const FILE_NAME = "paradiso-note.txt";
-// Two chunks' worth would take minutes on a development server; one chunk with
-// a partial tail is enough to prove the split, the seal, and the reassembly.
 const CONTENTS = "Paradiso hand-off\n".repeat(2048);
 
-/**
- * Chromium exposes `showSaveFilePicker` and `showDirectoryPicker`, and both
- * open a native dialog no automated browser can drive. Removing them puts these
- * runs on the fallback every other browser uses anyway — assemble, then hand
- * the file to the download machinery — which is the path with something a test
- * can actually observe. The direct-write path is asserted for its wording in
- * `drop-save.test.ts` and listed for manual verification in
- * `docs/FILE_COMPATIBILITY.md`.
- */
 async function useDownloadFallback(context: BrowserContext): Promise<void> {
   await context.addInitScript(() => {
     delete (window as unknown as Record<string, unknown>).showSaveFilePicker;
@@ -36,12 +25,6 @@ async function pickFile(page: Page, name: string, body: string): Promise<void> {
   });
 }
 
-/**
- * The twelve-character transfer code, which the sending screen no longer puts
- * in front of anyone. It is still the secret that opens the files, so the tests
- * that assert it never leaves the device read it from the development-only
- * attribute rather than from the page text.
- */
 async function readTransferCode(page: Page): Promise<string> {
   const ready = page.locator(".drop-ready");
   await expect(ready).toHaveAttribute("data-transfer-code", /^[0-9A-HJKMNP-TV-Z]{12}$/u, {
@@ -69,7 +52,6 @@ test("hands a file from one phone to another and back to disk", async ({ browser
     await receiving.goto("/receive");
     await handOver(sending, receiving);
 
-    // The file list is only readable once the code has opened the manifest.
     await expect(receiving.getByText(FILE_NAME)).toBeVisible({ timeout: 60_000 });
 
     const download = receiving.waitForEvent("download", { timeout: 120_000 });
@@ -82,13 +64,9 @@ test("hands a file from one phone to another and back to disk", async ({ browser
     for await (const chunk of stream) chunks.push(chunk as Buffer);
     expect(Buffer.concat(chunks).toString("utf8")).toBe(CONTENTS);
 
-    // The screen says what actually happened. A blob handed to the browser has
-    // started a download; it has not been confirmed onto storage, and the copy
-    // must not claim otherwise.
     await expect(receiving.getByText(/Download started|내려받기를 시작했어요/u)).toBeVisible();
     await expect(receiving.getByText(/handed over|건네줬어요/u)).toBeVisible();
 
-    // The sender learns that the other phone finished, and nothing else.
     await expect(sending.getByText(/has taken the files|받아 갔어요/u)).toBeVisible({
       timeout: 60_000,
     });
@@ -168,7 +146,6 @@ test("saves one of several files without fetching the rest", async ({ browser })
     ]);
     await expect(sending.getByText("second.txt")).toBeVisible();
 
-    // A selection is edited, not restarted: one wrong file costs one removal.
     await sending.getByRole("button", { name: /Remove second\.txt|second\.txt 빼기/u }).click();
     await expect(sending.getByText("second.txt")).toHaveCount(0);
     await expect(sending.getByText("first.txt")).toBeVisible();
@@ -181,8 +158,6 @@ test("saves one of several files without fetching the rest", async ({ browser })
     await handOver(sending, receiving);
     await expect(receiving.getByText("third.txt")).toBeVisible({ timeout: 60_000 });
 
-    // Only the second row's Save is pressed. Somebody who wants one of five
-    // files should not have to take all five.
     const downloads: string[] = [];
     receiving.on("download", (download) => downloads.push(download.suggestedFilename()));
     const rows = receiving.locator(".drop-file-list--actions > li");
@@ -209,8 +184,6 @@ test("lets a receiver scan before the sender has finished uploading", async ({ b
 
   try {
     const sending = await sender.newPage();
-    // Hold the part uploads so the transfer stays unsealed while the receiver
-    // arrives, which is exactly what a slow gigabyte looks like.
     let release = () => {};
     const held = new Promise<void>((resolve) => {
       release = resolve;
@@ -224,19 +197,14 @@ test("lets a receiver scan before the sender has finished uploading", async ({ b
     await pickFile(sending, FILE_NAME, "waiting for the receiver\n");
     await sending.getByRole("button", { name: /Send these files|이 파일 보내기/u }).click();
 
-    // QR and shared-link hand-offs remain available as soon as the service
-    // holds the record. Nearby two-digit pairing deliberately waits for the
-    // upload to seal so its three-minute escrow clock cannot run out here.
     const transferCode = await readTransferCode(sending);
     const receiving = await receiver.newPage();
     await receiving.goto(`/receive#c=${transferCode}`);
 
-    // The right code, an unfinished transfer: wait, do not claim it is wrong.
     await expect(receiving.getByRole("heading", { name: /Connected|연결됐어요/u })).toBeVisible({
       timeout: 60_000,
     });
     await expect(receiving.getByText(/still being prepared|준비하고 있어요/u)).toBeVisible();
-    // Nothing about the files leaks before the transfer is sealed.
     await expect(receiving.getByText(FILE_NAME)).toHaveCount(0);
 
     release();
@@ -264,8 +232,6 @@ test("opens a transfer from a pasted link, not just from twelve characters", asy
     const receiving = await receiver.newPage();
     await receiving.goto("/receive");
     await waitForReceiveHydration(receiving);
-    // A whole link is what a person actually pastes. The field used to strip it
-    // to the letters of its own hostname and open nothing.
     await receiving.getByRole("group").click();
     await receiving
       .getByTestId("drop-code-input")
@@ -306,7 +272,6 @@ test("keeps the transfer code out of request URLs", async ({ page }) => {
   }
 });
 
-/** A wrong shape consumes the short pairing, so four-choice guessing fails. */
 test("consumes the pairing after one wrong shape", async ({ browser }) => {
   const sender = await browser.newContext();
   const receiver = await browser.newContext();
@@ -331,8 +296,6 @@ test("consumes the pairing after one wrong shape", async ({ browser }) => {
     await expect(receiving.getByText(/numbers and shape|숫자와 도형/u)).toBeVisible();
     await expect(receiving.getByText(FILE_NAME)).toHaveCount(0);
 
-    // The same digits cannot be retried with the right answer: the first
-    // attempt already destroyed the escrow.
     for (const digit of shortCode) {
       await receiving.getByTestId(`pairing-key-${digit}`).click();
     }
@@ -345,7 +308,6 @@ test("consumes the pairing after one wrong shape", async ({ browser }) => {
   }
 });
 
-/** Two digits that name no transfer are answered plainly, not with a hint. */
 test("says so plainly when two digits match nothing", async ({ page }) => {
   await page.goto("/receive");
   await waitForReceiveHydration(page);

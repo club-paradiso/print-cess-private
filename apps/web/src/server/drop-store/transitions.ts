@@ -6,22 +6,12 @@ import { ServiceError } from "../errors";
 
 export type DropMutation = (drop: DropRecord) => DropRecord;
 
-/**
- * The state rules every drop store shares. Keeping them here means the
- * in-memory, Redis, and PostgreSQL adapters cannot drift into three different
- * definitions of "sealed" or "already committed".
- */
 export function requireOwner(drop: DropRecord, candidateTokenHash: string): void {
   if (!timingSafeEqualBase64Url(drop.ownerTokenHash, candidateTokenHash)) {
     throw new ServiceError("unauthorized", "The transfer credential is invalid.", 401);
   }
 }
 
-/**
- * Commits are idempotent: a phone that retries after a dropped response gets
- * the same answer. A part that was already committed at a different size means
- * two different uploads raced for one slot, which must fail loudly.
- */
 export function applyPartCommits(drop: DropRecord, commits: readonly DropPartCommit[]): DropRecord {
   if (drop.status !== "collecting") {
     throw new ServiceError("conflict", "This transfer is already sealed.", 409);
@@ -44,12 +34,6 @@ export function applyPartCommits(drop: DropRecord, commits: readonly DropPartCom
   }
   if (addedBytes === 0) return drop;
   const totalCiphertextBytes = drop.totalCiphertextBytes + addedBytes;
-  // The declared size is what the transfer ceiling was checked against at
-  // creation, and these sizes were read back from the storage provider rather
-  // than taken from the request. Holding the running total to the declared
-  // plaintext plus one authentication tag per part is therefore the point at
-  // which a sender who under-declared its size stops being able to profit
-  // from it, and it is checked inside the same atomic mutation as the commit.
   if (totalCiphertextBytes > ciphertextCeiling(drop)) {
     throw new ServiceError("payload_too_large", "This transfer is larger than the limit.", 413);
   }
@@ -65,11 +49,6 @@ function ciphertextCeiling(drop: DropRecord): number {
   return drop.totalBytes + drop.partCount * DROP_PART_TAG_BYTES;
 }
 
-/**
- * Records one receiver event. The counters only ever move forward, so a
- * receiver that retries a download cannot walk the sending phone's screen
- * backwards from "delivered" to "download started".
- */
 export function applyReceiverEvent(drop: DropRecord, event: DropReceiverEvent): DropRecord {
   if (drop.status !== "ready") {
     throw new ServiceError("not_found", "This transfer is not ready yet.", 404);

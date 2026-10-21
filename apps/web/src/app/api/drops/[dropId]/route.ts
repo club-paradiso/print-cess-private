@@ -9,7 +9,6 @@ import { uploadedPartCount } from "@/server/drop-store/transitions";
 
 export const runtime = "nodejs";
 
-/** Lets the sending phone show live progress: is it ready, and has it landed? */
 export async function GET(request: Request, context: { params: Promise<{ dropId: string }> }) {
   try {
     const server = getRuntime();
@@ -42,7 +41,6 @@ export async function GET(request: Request, context: { params: Promise<{ dropId:
   }
 }
 
-/** The sender's stop button: erases the ciphertext now instead of at expiry. */
 export async function DELETE(request: Request, context: { params: Promise<{ dropId: string }> }) {
   try {
     const server = getRuntime();

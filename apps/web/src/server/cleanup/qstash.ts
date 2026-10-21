@@ -49,11 +49,6 @@ export async function verifyQStashRequest(
   if (!signature) return false;
   const receiver = new Receiver({ currentSigningKey, nextSigningKey });
   try {
-    // QStash signs the URL that was submitted to publishJSON. Vercel can serve
-    // the same deployment through several aliases, so request.url is not a
-    // stable verification input. Verify against the configured public callback
-    // instead and treat malformed/invalid signatures as authorization failures,
-    // not generic 503 application errors.
     return await receiver.verify({ signature, body, url: canonicalCallbackUrl });
   } catch {
     return false;

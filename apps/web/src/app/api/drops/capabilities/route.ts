@@ -15,16 +15,6 @@ import { getRuntime } from "@/server/runtime";
 
 export const runtime = "nodejs";
 
-/**
- * The limits a sending phone needs before it commits to a transfer.
- *
- * Without this the phone can only guess: it knows what the protocol allows,
- * not what this deployment configured, so a visitor could spend several
- * hundred milliseconds on key stretching and then minutes uploading before
- * learning the transfer was always too large. Every value here is a published
- * product limit — nothing describes the storage, the queue, or the database
- * behind them.
- */
 export async function GET(request: Request) {
   try {
     const server = getRuntime();

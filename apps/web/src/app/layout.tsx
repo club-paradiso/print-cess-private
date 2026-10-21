@@ -24,8 +24,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// The browser's own chrome takes the page's Paper White, so the phone's status
-// bar and the page read as one surface. The product is light-only by design.
 export const viewport: Viewport = {
   themeColor: "#f8fafc",
   colorScheme: "light",

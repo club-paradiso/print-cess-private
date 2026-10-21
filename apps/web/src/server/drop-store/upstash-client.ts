@@ -2,11 +2,6 @@ import { Redis } from "@upstash/redis";
 
 import type { RedisScriptClient } from "../session-store/redis-client";
 
-/**
- * Presents Upstash's REST client through the same command port the standard
- * Redis client already implements, so `RedisDropStore` has exactly one body to
- * maintain instead of one per hosted provider.
- */
 export class UpstashScriptClient implements RedisScriptClient {
   readonly #redis: Redis;
 
@@ -28,8 +23,6 @@ export class UpstashScriptClient implements RedisScriptClient {
   }
 
   public async get(key: string): Promise<string | null> {
-    // The REST client parses JSON responses eagerly, so a stored record comes
-    // back as an object. Re-serialize it to keep the port's string contract.
     const raw = await this.#redis.get<unknown>(key);
     if (raw === null || raw === undefined) return null;
     return typeof raw === "string" ? raw : JSON.stringify(raw);

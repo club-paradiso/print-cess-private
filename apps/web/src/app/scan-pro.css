@@ -104,8 +104,6 @@
 .scan-live-stage {
   position: relative;
   width: 100%;
-  /* Keep a usable preview even if a browser's production CSP rejects a
-     dynamically assigned aspect-ratio style attribute. */
   aspect-ratio: 3 / 4;
   max-height: calc(100dvh - 190px);
   overflow: hidden;

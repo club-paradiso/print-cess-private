@@ -20,8 +20,6 @@ export async function GET(request: Request) {
     const server = getRuntime();
     let sessionStore: "ready" | "unavailable" = "ready";
     try {
-      // A canonical, deliberately absent identifier performs a side-effect-free
-      // round trip against Redis in external mode and a memory lookup locally.
       await server.sessions.get(PROBE_SESSION_ID);
     } catch {
       sessionStore = "unavailable";

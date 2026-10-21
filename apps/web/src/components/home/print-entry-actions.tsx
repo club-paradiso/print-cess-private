@@ -32,25 +32,13 @@ export type PrintEntryLabels = {
 type Panel = "lost" | "scan" | null;
 type ScanState = "starting" | "scanning" | "denied" | "unsupported";
 
-/** How long a rejected QR code keeps its message on screen after it leaves view. */
 const INVALID_NOTICE_MS = 4000;
 
-/**
- * The two actions for somebody who reached the home page without scanning the
- * Print-cess screen: scan its QR code from here, or be shown how to find it.
- * Both open as a sheet, so the page behind keeps its place and nothing is
- * navigated until a valid Print-cess code has been read.
- *
- * The phone's own camera app stays the primary route and keeps working with no
- * page involved; this is the recovery path, and where the browser cannot scan
- * it says so and points back to that app instead of pretending.
- */
 export function PrintEntryActions({
   labels,
   sessionOrigin,
 }: {
   labels: PrintEntryLabels;
-  /** The deployment's PUBLIC_BASE_URL origin, which kiosk QR codes name. */
   sessionOrigin?: string | undefined;
 }) {
   const [panel, setPanel] = useState<Panel>(null);
@@ -67,8 +55,6 @@ export function PrintEntryActions({
     const other = next === "lost" ? scanDialog.current : lostDialog.current;
     if (other?.open) other.close();
     if (dialog && !dialog.open) dialog.showModal();
-    // Decided here, in the click, so the sheet opens already saying what it
-    // can do and no effect has to correct it afterwards.
     setScanState(next === "scan" && !supportsCodeScanning() ? "unsupported" : "starting");
     setInvalid(false);
     setPanel(next);
@@ -80,8 +66,6 @@ export function PrintEntryActions({
     setPanel(null);
   }, []);
 
-  // The dialog also closes itself on Escape and on the platform back gesture;
-  // keep the state, and with it the camera, in step.
   const onDialogClosed = useCallback((which: Exclude<Panel, null>) => {
     setPanel((current) => (current === which ? null : current));
   }, []);
@@ -113,7 +97,6 @@ export function PrintEntryActions({
         scanner.current = active;
         setScanState("scanning");
         void active.codes.then((path) => {
-          // Only the validated path ever reaches here, never the scanned text.
           if (path !== null && !cancelled) window.location.assign(path);
         });
       },

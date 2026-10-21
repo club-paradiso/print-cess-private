@@ -3,8 +3,6 @@ import { expect, type Page } from "@playwright/test";
 import type { PairingShape } from "@print-cess/protocol";
 
 export async function chooseSenderShape(page: Page, shape: PairingShape = "star"): Promise<void> {
-  // The number-and-shape hand-off sits behind a disclosure once the upload has
-  // sealed; open it the way a visitor would.
   const moreWays = page.locator("details.drop-more-ways");
   await expect(moreWays).toBeVisible({ timeout: 120_000 });
   if (!(await moreWays.evaluate((element) => (element as HTMLDetailsElement).open))) {
@@ -27,7 +25,6 @@ export async function waitForReceiveHydration(page: Page): Promise<void> {
   await expect(page.getByTestId("pairing-entry")).not.toHaveText(/^1/u);
 }
 
-/** The full nearby-phone hand-off: sender shape, two digits, receiver shape. */
 export async function handOver(sending: Page, receiving: Page): Promise<void> {
   const shape: PairingShape = "star";
   await chooseSenderShape(sending, shape);
