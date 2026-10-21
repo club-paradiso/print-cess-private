@@ -12,8 +12,7 @@ export default async function BrowserKioskPage({
     sound?: string | string[];
   }>;
 }) {
-  if (process.env.NODE_ENV === "production" && !isBrowserKioskEnabled())
-    notFound();
+  if (process.env.NODE_ENV === "production" && !isBrowserKioskEnabled()) notFound();
   const { printing, sound } = await searchParams;
   const locale = await requestLocale();
   // `?sound=off` for a counter where a completion tone would carry further than
