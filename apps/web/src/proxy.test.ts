@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { blobConnectOrigins, buildContentSecurityPolicy } from "./proxy";
 
-/** `ProcessEnv` demands NODE_ENV, which none of these cases depend on. */
 function env(values: Record<string, string> = {}): NodeJS.ProcessEnv {
   return values as NodeJS.ProcessEnv;
 }
@@ -48,8 +47,6 @@ describe("Content Security Policy", () => {
   });
 
   it("admits the configured S3 endpoint so the browser can reach it", () => {
-    // The phone PUTs and GETs ciphertext directly. Without its origin here the
-    // S3 provider is selectable but unusable from a browser.
     const origins = blobConnectOrigins(
       env({
         PRINT_CESS_BLOB_PROVIDER: "railway-s3",
