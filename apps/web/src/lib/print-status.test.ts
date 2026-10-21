@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import { RECONNECT_AFTER_FAILURES, watchPrintStatus, type PrintWatchState } from "./print-status";
 
-/** A clock and a sleep that never actually wait, so the tests run instantly. */
 function fakeTiming(intervalMs = 1000) {
   let current = 0;
   return {
@@ -37,8 +36,6 @@ describe("watchPrintStatus", () => {
   it("never turns a lost connection into a failed print", async () => {
     const timing = fakeTiming();
     const { states, onState } = record();
-    // The phone loses signal for several polls and then gets it back. The
-    // kiosk was printing the whole time.
     const poll = vi
       .fn()
       .mockRejectedValueOnce(new Error("offline"))
@@ -69,8 +66,6 @@ describe("watchPrintStatus", () => {
 
     await watchPrintStatus({ poll, onState, ...timing });
 
-    // One hiccup is not worth a sentence; the reconnecting notice only appears
-    // once the connection is genuinely gone.
     expect(states.map((state) => state.kind)).toEqual(["waiting", "completed"]);
     expect(RECONNECT_AFTER_FAILURES).toBeGreaterThan(1);
   });
@@ -98,8 +93,6 @@ describe("watchPrintStatus", () => {
 
     const result = await watchPrintStatus({ poll, onState, deadlineMs: 10_000, ...timing });
 
-    // Contact was never regained. That is neither a completed print nor a
-    // failed one, and the screen must not choose one.
     expect(result).toEqual({ kind: "unknown" });
     expect(states.at(-1)).toEqual({ kind: "unknown" });
     expect(states.some((state) => state.kind === "completed")).toBe(false);
@@ -131,7 +124,6 @@ describe("watchPrintStatus", () => {
 
     await watchPrintStatus({ poll, onState, ...timing });
 
-    // A screen reader should hear the state change, not a metronome.
     expect(states.map((state) => state.kind)).toEqual(["waiting", "completed"]);
   });
 });

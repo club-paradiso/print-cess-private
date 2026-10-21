@@ -7,9 +7,6 @@ const securityHeaders = [
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
   {
     key: "Permissions-Policy",
-    // The receive flow uses the camera only after an explicit user tap to scan
-    // the sender's QR code. `self` keeps that capability on this origin while
-    // microphone, location, payment, and USB remain unavailable everywhere.
     value: "camera=(self), microphone=(), geolocation=(), payment=(), usb=()",
   },
   { key: "Referrer-Policy", value: "no-referrer" },
@@ -33,8 +30,6 @@ const config: NextConfig = {
     "@print-cess/ui",
   ],
   async rewrites() {
-    // Lets managed networks that approved this origin, but not the storage
-    // host, still move ciphertext. See src/server/blob-relay.ts.
     return { beforeFiles: blobRelayRewrites(), afterFiles: [], fallback: [] };
   },
   async headers() {

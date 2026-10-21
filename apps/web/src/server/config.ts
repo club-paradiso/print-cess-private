@@ -22,18 +22,11 @@ const configSchema = z.object({
   qrTtlMs: z.number().int().min(30_000).max(300_000),
   sessionTtlMs: z.number().int().min(30_000).max(300_000),
   signedUrlTtlMs: z.number().int().min(15_000).max(180_000),
-  // A visitor counter session (see /visitor) keeps its QR alive longer than
-  // the default public QR: visitors may queue before scanning. It is still a
-  // hard file lifetime — the session-expiry cleanup deletes the uploaded
-  // ciphertext once it passes — so it stays bounded at thirty minutes.
   visitorTtlMs: z
     .number()
     .int()
     .min(60_000)
     .max(30 * 60_000),
-  // A hand-off between two people is not a print job: the receiver may be in
-  // another room, or on their way, so a drop lives minutes to hours rather
-  // than the two minutes a kiosk QR code is worth.
   dropTtlMs: z
     .number()
     .int()
@@ -59,9 +52,6 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): Server
   }
 
   const external = mode === "external";
-  // Provider selection is only meaningful in external mode. Unset selectors
-  // default to the original Upstash/Vercel/QStash stack so existing external
-  // deployments keep working and can roll back without touching env vars.
   const sessionProvider = external
     ? selectProvider(environment, "PRINT_CESS_SESSION_PROVIDER", SESSION_PROVIDERS, "upstash-redis")
     : null;
@@ -102,8 +92,6 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): Server
     requireSecret(environment, "ADMIN_DIAGNOSTICS_SECRET", 32);
   }
 
-  // Fail closed for the concrete providers that are actually selected. Unused
-  // provider credentials are never demanded.
   if (external) {
     assertSessionProvider(environment, sessionProvider);
     assertBlobProvider(environment, blobProvider);

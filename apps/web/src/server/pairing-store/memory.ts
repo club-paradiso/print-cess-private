@@ -3,10 +3,6 @@ import type { PairingRecord } from "@print-cess/protocol";
 import type { PairingStore } from "../contracts";
 import { requireLive, requireShape } from "./transitions";
 
-/**
- * Development and single-process store. Every read and write hands back a clone
- * so a caller can never mutate stored state by holding on to a returned record.
- */
 export class MemoryPairingStore implements PairingStore {
   readonly #pairings = new Map<string, PairingRecord>();
 
@@ -35,8 +31,6 @@ export class MemoryPairingStore implements PairingStore {
     now: number,
   ): Promise<PairingRecord> {
     const current = requireLive(await this.get(code), now);
-    // Consume before checking the shape. A wrong shape therefore gets exactly
-    // one try and cannot walk the four choices against a live two-digit code.
     this.#pairings.delete(code);
     return requireShape(current, shape);
   }
@@ -45,7 +39,6 @@ export class MemoryPairingStore implements PairingStore {
     this.#pairings.delete(code);
   }
 
-  /** A hundred codes is a small pool; expired ones have to free up promptly. */
   private prune(now: number): void {
     for (const [code, pairing] of this.#pairings) {
       if (pairing.expiresAt <= now) this.#pairings.delete(code);

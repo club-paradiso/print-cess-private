@@ -35,11 +35,6 @@ export function DocumentPreview({
       : file;
   }, [file, validated.bytes, validated.fileKind, validated.normalized]);
 
-  // Each attachment of the image gets its own object URL and revokes exactly
-  // that one when it detaches. A URL made once and revoked by an effect's
-  // cleanup can be revoked while the image is still loading it (React runs
-  // effects twice in development), which left the preview broken: the one
-  // screen whose job is to show the visitor what will be printed.
   const attachPreview = useCallback(
     (image: HTMLImageElement | null) => {
       if (!image || !previewBlob) return;

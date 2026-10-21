@@ -23,8 +23,6 @@ const NEW_PAGE_DRIFT = 0.055;
 
 async function waitForVideoDimensions(video: HTMLVideoElement): Promise<boolean> {
   if (video.videoWidth > 0 && video.videoHeight > 0) return true;
-  // Safari can resolve play() before the stream has produced its first frame.
-  // Never enable an apparently functional shutter on a 0 × 0 video.
   return new Promise((resolve) => {
     let finished = false;
     const finish = (ready: boolean) => {
@@ -164,8 +162,6 @@ export function LiveDocumentCamera({
       await onCaptureRef.current(file);
     } catch (captureError) {
       console.error("[scan-camera] capture failed", captureError);
-      // The video might still be running, so retain manual capture and provide
-      // a direct route to the platform camera instead of a silent dead button.
       setMessage(copyRef.current.cameraFallback);
     } finally {
       window.setTimeout(() => {
@@ -252,8 +248,6 @@ export function LiveDocumentCamera({
         stableFrames.current = 0;
         analysisFailures.current += 1;
         if (analysisFailures.current >= 2) {
-          // A failed WASM runtime must not keep the phone busy forever.
-          // Manual shutter remains available; the native camera is one tap away.
           analysisUnavailableRef.current = true;
           setAnalysisUnavailable(true);
           autoCaptureRef.current = false;

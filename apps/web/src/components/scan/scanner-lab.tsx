@@ -43,12 +43,6 @@ function verdict(observation: ScanLabObservation): { ok: boolean; text: string }
     : { ok: false, text: problems.join(", ") };
 }
 
-/**
- * A development page that runs the real scan engine over synthetic scenes with
- * a known answer and shows the result, so a person can see what the numbers in
- * the accuracy test mean. The e2e test drives the same runner through
- * `window.__printCessScanLab`.
- */
 export function ScannerLab() {
   const [rows, setRows] = useState<Row[]>([]);
   const [running, setRunning] = useState(false);

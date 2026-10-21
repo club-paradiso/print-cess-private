@@ -2,9 +2,6 @@ using Paradiso.PrintCess.Core.Protocol;
 
 namespace Paradiso.PrintCess.Core.Documents;
 
-// Bundle parsing lives in Core.Protocol.PrintBundle. This internal facade keeps
-// document detection/inspection on the canonical parser without introducing a
-// second implementation with different file-count or payload limits.
 internal static class PrintBundle
 {
     private static ReadOnlySpan<byte> Magic => [0x50, 0x43, 0x42, 0x4e, 0x44, 0x4c, 0x30, 0x31];
@@ -16,9 +13,6 @@ internal static class PrintBundle
         Paradiso.PrintCess.Core.Protocol.PrintBundle.Parse(bytes);
 }
 
-// Retained for the PR's visitor-facing error mapping. The canonical protocol
-// parser currently throws EnvelopeFormatException, which is handled by the same
-// failure path.
 public sealed class PrintBundleException : ProtocolException
 {
     public PrintBundleException(string message)

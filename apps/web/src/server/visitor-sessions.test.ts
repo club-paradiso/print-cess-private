@@ -87,8 +87,6 @@ describe("visitor print sessions", () => {
     const deleted: string[] = [];
     const runtime = stubRuntime(config, (pathname) => deleted.push(pathname));
 
-    // A visitor who uploaded a document and then abandoned the counter: the
-    // session passed its expiry with ciphertext still on the blob store.
     const past = Date.now() - 60_000;
     const blobPath = createBlobPath();
     const expired: PrintSession = {

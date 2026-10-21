@@ -7,16 +7,6 @@ import Link from "next/link";
 import { LOCALE_NAMES, SUPPORTED_LOCALES, type SupportedLocale } from "@print-cess/i18n";
 import { Wordmark } from "@print-cess/ui";
 
-/**
- * The header every consumer screen shares: the name, which leads home, and the
- * language picker for the times the browser's own answer was wrong. Below it,
- * the capability the visitor is in ("Share", "Scan"), so sending and receiving
- * read as two sides of one thing rather than two tools.
- *
- * The print flow deliberately does not use it. A phone that scanned a kiosk
- * code holds a short-lived session, and a link away from it mid-print costs
- * the visitor their place for no benefit.
- */
 export function AppTopbar({
   locale,
   onLocaleChange,

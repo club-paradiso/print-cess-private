@@ -13,22 +13,10 @@ async function openSession(page: Page, kioskPath = "/kiosk"): Promise<string> {
   await page.goto(kioskPath);
   await expect(page.getByText("QR코드를 카메라로 비추세요", { exact: true })).toBeVisible();
   const qr = page.locator(".kiosk-qr");
-  // A cold Next.js development server can compile this API route while all
-  // three browser projects arrive together. Wait for the actual session
-  // receipt instead of coupling the flow to development compilation speed.
-  //
-  // `data-session-url` carries a live upload token, so the kiosk only exposes
-  // it outside a Production build. These tests therefore require the
-  // development server configured in `playwright.config.ts`.
   await expect(qr).toHaveAttribute("data-session-url", /#t=/u, { timeout: 60_000 });
   return (await qr.getAttribute("data-session-url"))!;
 }
 
-/**
- * Scanning lands on the multi-file chooser. There is no language screen and no
- * guide screen in front of it: the browser already carries the visitor's
- * language, and the guide is in Help for whoever wants it.
- */
 async function openMobile(
   kiosk: Page,
   context: BrowserContext,
@@ -56,9 +44,6 @@ test("mobile PNG flow encrypts, uploads, consumes once, and completes", async ({
   await expect(mobile.getByRole("heading", { name: "Is this the right page?" })).toBeVisible();
   const preview = mobile.getByRole("img", { name: "Preview of the file you picked" });
   await expect(preview).toBeVisible();
-  // Visible is not enough: a revoked object URL still leaves a visible, broken
-  // image. The preview is how the visitor catches the wrong page, so it must
-  // actually decode.
   await expect
     .poll(() => preview.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0);
@@ -68,8 +53,6 @@ test("mobile PNG flow encrypts, uploads, consumes once, and completes", async ({
   });
   await expect(page.getByText("파일 1개를 프린터로 보냈어요")).toBeVisible();
   await expect(page.getByRole("button", { name: "인쇄 창 다시 열기" })).toHaveCount(0);
-  // A single file needs no number to tell it apart, so it keeps the plain
-  // label and the artifact's own name.
   const download = page.getByRole("link", { name: "파일 다운로드 (직원용)" });
   await expect(download).toHaveAttribute("download", "print-cess-document.png");
   await expect(download).toHaveAttribute("href", /^blob:/u);
@@ -77,12 +60,6 @@ test("mobile PNG flow encrypts, uploads, consumes once, and completes", async ({
     timeout: 60_000,
   });
 
-  // Shutting the page down closes the tab where the browser allows it. A tab
-  // opened by scanning a QR was not opened by script, so most browsers refuse;
-  // the visitor then gets a screen that carries nothing from the visit.
-  // Chromium's network service consumes `Clear-Site-Data` before Playwright can
-  // read it back, which is the point of sending it. Assert the phone asks here,
-  // and assert what the answer contains in the request-level test below.
   const clearSiteData = mobile.waitForRequest(
     (request) => request.url().endsWith("/api/session-end"),
     { timeout: 15_000 },
@@ -97,11 +74,6 @@ test("mobile PNG flow encrypts, uploads, consumes once, and completes", async ({
   }
 });
 
-/**
- * Chromium titles the native dialog behind `showSaveFilePicker` "Warning: this
- * site can see edits you make". Printing must never open any file-system
- * picker, so each one is replaced by a recorder in every frame of the kiosk.
- */
 async function recordPickerCalls(kiosk: Page): Promise<() => Promise<string[]>> {
   await kiosk.addInitScript(() => {
     const calls: string[] = [];
@@ -141,7 +113,6 @@ test("one kiosk scan prints multiple selected photos in order", async ({ page, c
   await expect(mobile.getByRole("heading", { name: "Check these files" })).toBeVisible({
     timeout: 30_000,
   });
-  // The files are listed in print order, each with its kind and size.
   const listed = mobile.locator("ol.mobile-selected > li");
   await expect(listed).toHaveCount(2);
   await expect(listed.nth(0)).toContainText("01-photo.png");
@@ -155,8 +126,6 @@ test("one kiosk scan prints multiple selected photos in order", async ({ page, c
     timeout: 60_000,
   });
   await expect(page.getByText("파일 2개를 프린터로 보냈어요")).toBeVisible();
-  // Several files do get numbered, so staff can match each download to the
-  // order the visitor picked them in.
   await expect(page.getByRole("link", { name: "파일 1 다운로드 (직원용)" })).toHaveAttribute(
     "download",
     /^1-print-cess-document\.png$/u,
@@ -173,8 +142,6 @@ test("the finished screen fits a 1080p kiosk at 150% Windows scaling", async ({
   page,
   context,
 }) => {
-  // 1920x1080 with Windows display scaling at 150% gives the browser 1280x720.
-  // The countdown line at the foot of this screen used to sit below the fold.
   await page.setViewportSize({ width: 1280, height: 720 });
   const { mobile } = await openMobile(page, context, "/kiosk?printing=auto");
   await mobile.getByTestId("file-input").setInputFiles([
@@ -207,9 +174,6 @@ test("a kiosk browser that cannot open PDFs says so instead of claiming it print
 }) => {
   const pickerCalls = await recordPickerCalls(page);
   const { mobile } = await openMobile(page, context, "/kiosk?printing=auto");
-  // Playwright's default headless shell ships without a PDF viewer, like a
-  // managed browser that opens PDFs externally. A PDF never loads there, so
-  // nothing can reach the print dialog.
   test.skip(
     await page.evaluate(() => navigator.pdfViewerEnabled),
     "needs a kiosk browser without a PDF viewer",
@@ -230,14 +194,11 @@ test("a kiosk browser that cannot open PDFs says so instead of claiming it print
   await expect(mobile.getByRole("heading", { name: "Check these files" })).toBeVisible({
     timeout: 30_000,
   });
-  // A PDF of several pages says how many pages will come out.
   const listed = mobile.locator("ol.mobile-selected > li");
   await expect(listed.nth(1)).toContainText("02-document.pdf");
   await expect(listed.nth(1)).toContainText("2 pages");
   await mobile.getByRole("button", { name: "Print 2 files" }).click();
 
-  // The whole batch loads before any dialog opens, so the photo is not
-  // printed either, and neither screen reports a print that never happened.
   await expect(page.getByRole("heading", { name: "지금은 인쇄할 수 없어요" })).toBeVisible({
     timeout: 60_000,
   });
@@ -249,14 +210,10 @@ test("a kiosk browser that cannot open PDFs says so instead of claiming it print
 });
 
 test("ending a visit tells the browser to drop this origin's data", async ({ request }) => {
-  // Uses the request fixture rather than a page: a browser applies the header
-  // and removes it, so only an HTTP-level check can see what was sent. This
-  // covers the Next.js header merge that the route unit test cannot.
   const response = await request.post("/api/session-end");
 
   expect(response.status()).toBe(204);
   expect(response.headers()["clear-site-data"]).toBe('"cache", "cookies", "storage"');
-  // Reloading a spent session would replace the visitor's confirmation with an error.
   expect(response.headers()["clear-site-data"]).not.toContain("executionContexts");
 });
 
@@ -313,9 +270,6 @@ test("a rejected pick clears the picker so the same file can be chosen again", a
   page,
   context,
 }) => {
-  // iOS hands over an iCloud file before its bytes arrive, and the notice then
-  // asks for the same file again. An input that kept its value would swallow
-  // that second pick without a change event.
   const { mobile } = await openMobile(page, context);
   const input = mobile.getByTestId("file-input");
   await input.setInputFiles({
@@ -343,9 +297,6 @@ test("a gallery photo taken sideways reaches the preview", async ({ page, contex
     buffer: Buffer.from(await createSidewaysSyntheticJpeg()),
   });
 
-  // The EXIF orientation tag makes the browser decode this photo with its axes
-  // swapped relative to the dimensions stored in the file. It is a valid,
-  // printable photograph and must not be reported as damaged.
   await expect(mobile.getByRole("heading", { name: "Is this the right page?" })).toBeVisible();
   await expect(mobile.getByRole("img", { name: "Preview of the file you picked" })).toBeVisible();
   await expect(mobile.getByText(/will not open/u)).toHaveCount(0);
@@ -380,14 +331,10 @@ test("the language picker and the guide are available without blocking anything"
 }) => {
   const { mobile } = await openMobile(page, context);
 
-  // The picker is in the header, so changing language costs nothing and
-  // interrupts nothing.
   await mobile.getByLabel("Choose your language").selectOption("ko");
   await expect(mobile.getByRole("heading", { name: "인쇄할 파일을 고르세요" })).toBeVisible();
   await expect(mobile.locator("html")).toHaveAttribute("lang", "ko");
 
-  // The guide that used to be a screen of its own is one tap away from the
-  // screen that needs it.
   const sheet = mobile.getByRole("dialog");
   await mobile.getByRole("button", { name: "어떻게 쓰나요?" }).click();
   await expect(sheet.getByRole("heading", { name: "지금 무엇을 하면 되나요?" })).toBeVisible();
@@ -398,7 +345,6 @@ test("the language picker and the guide are available without blocking anything"
   await sheet.getByRole("button", { name: "알겠어요" }).click();
   await expect(sheet).toBeHidden();
 
-  // The picker screen itself stays down to two actions plus the quiet link.
   await expect(mobile.getByRole("button", { name: "사진에서 고르기" })).toBeVisible();
   await expect(mobile.getByRole("button", { name: "파일에서 고르기" })).toBeVisible();
   await expect(mobile.getByText("카카오톡")).toHaveCount(0);
@@ -410,14 +356,10 @@ test("the language picker and the guide are available without blocking anything"
 test("the kiosk stops asking for a scan once a phone has connected", async ({ page, context }) => {
   const { mobile } = await openMobile(page, context);
 
-  // The QR is no longer valid and the work is on the visitor's phone, so the
-  // shared screen says where to look instead of repeating an instruction the
-  // visitor has already carried out.
   await expect(page.locator("[data-kiosk-state='connected']")).toBeVisible({ timeout: 30_000 });
   await expect(page.locator(".kiosk-connected__badge")).toContainText("휴대전화가 연결됐어요");
   await expect(page.locator(".kiosk-connected__headline")).toContainText("휴대전화에서 계속하세요");
   await expect(page.locator(".kiosk-qr")).toHaveCount(0);
-  // The public screen never names the document, only its stage.
   await expect(page.getByTestId("kiosk-document-token")).toBeVisible();
   expect(await mobile.title()).toBeTruthy();
 });

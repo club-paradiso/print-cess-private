@@ -1,6 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-/** Signed and expiring staff authorization for the visitor counter. */
 export const VISITOR_OPERATOR_COOKIE = "pc_visitor_operator";
 const VALID_FOR_MS = 30 * 60_000;
 const DOMAIN = "print-cess:visitor-operator:v1:";

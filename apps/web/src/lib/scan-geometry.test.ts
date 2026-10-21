@@ -52,8 +52,6 @@ describe("perspective aspect ratio", () => {
   it.each([0.65, 0.8, 1.0, 1.15])(
     "stays close to A4 for a straight-back tilt whatever the real focal length (%sx)",
     (focal) => {
-      // One vanishing point: the focal length cannot be read from the photo, so
-      // the phone prior stands in. The estimate must stay usable either way.
       const ratio = perspectiveAspectRatio(
         pixelQuad({ pitch: 25, yaw: 0, roll: 0, distance: 1.8, focal }),
         SCENE_WIDTH,
@@ -75,7 +73,6 @@ describe("perspective aspect ratio", () => {
   });
 
   it("refuses an implausible estimate instead of distorting the page", () => {
-    // A quad that no camera could produce from a rectangle: one corner pulled far out.
     const quad: DocumentQuad = [
       { x: 100, y: 100 },
       { x: 1400, y: 120 },

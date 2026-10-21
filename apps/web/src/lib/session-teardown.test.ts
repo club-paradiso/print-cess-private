@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-// The teardown works on browser storage, so it needs a document to clear.
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { clearBrowserSiteData } from "./session-teardown";
@@ -44,9 +43,6 @@ describe("session teardown", () => {
   });
 
   it("still finishes when the browser refuses a step or the request fails", async () => {
-    // A visitor must always reach the finished screen, so no rejection here may
-    // escape: Safari has no `indexedDB.databases()`, a locked-down browser can
-    // throw on storage access, and the phone may already be off the network.
     const fetchMock = vi.fn().mockRejectedValue(new Error("offline"));
     vi.stubGlobal("fetch", fetchMock);
     vi.stubGlobal("caches", {

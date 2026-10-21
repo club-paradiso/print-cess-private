@@ -3,12 +3,6 @@ import { NextResponse } from "next/server";
 
 const OCR_ASSET_ORIGINS = ["https://cdn.jsdelivr.net", "https://tessdata.projectnaptha.com"];
 
-/**
- * Both halves of the service upload and download ciphertext straight from the
- * browser to blob storage, so the configured provider's origin has to be
- * connectable. Only the selected provider is admitted; an unset or malformed
- * S3 endpoint simply contributes nothing rather than widening the policy.
- */
 export function blobConnectOrigins(environment: NodeJS.ProcessEnv = process.env): string[] {
   if (environment.PRINT_CESS_BLOB_PROVIDER !== "railway-s3") {
     return [
@@ -28,8 +22,6 @@ export function blobConnectOrigins(environment: NodeJS.ProcessEnv = process.env)
     return [];
   }
   const bucket = environment.S3_BUCKET;
-  // Virtual-hosted addressing puts the bucket in front of the endpoint host,
-  // so that form is admitted too unless the deployment forces path style.
   if (!bucket || environment.S3_FORCE_PATH_STYLE === "true") return [origin];
   const url = new URL(origin);
   return [origin, `${url.protocol}//${bucket}.${url.host}`];
@@ -44,10 +36,6 @@ export function buildContentSecurityPolicy(
   const connectSources = ["'self'", ...blobConnectOrigins(environment), ...OCR_ASSET_ORIGINS].join(
     " ",
   );
-  // The bundled OpenCV Emscripten glue invokes new Function() even though
-  // WebAssembly compilation itself only needs wasm-unsafe-eval. Production
-  // scanner tests confirmed that denying unsafe-eval breaks edge detection.
-  // Scope the exception to /scan; never weaken the other app routes.
   const allowScannerRuntime = isDevelopment || isScannerRoute;
   const scriptEvaluation = ` 'wasm-unsafe-eval'${allowScannerRuntime ? " 'unsafe-eval'" : ""}`;
   return [
@@ -63,8 +51,6 @@ export function buildContentSecurityPolicy(
     `connect-src ${connectSources}`,
     `script-src 'self' https://cdn.jsdelivr.net 'nonce-${nonce}' 'strict-dynamic'${scriptEvaluation}`,
     "script-src-attr 'none'",
-    // WebKit rejects scanner dynamic styles if nonce propagation fails. Only
-    // the scanner permits inline styles; all other production pages stay nonce-only.
     `style-src 'self' ${allowScannerRuntime ? "'unsafe-inline'" : `'nonce-${nonce}'`}`,
     "worker-src 'self' blob: https://cdn.jsdelivr.net",
     ...(isDevelopment ? [] : ["upgrade-insecure-requests"]),

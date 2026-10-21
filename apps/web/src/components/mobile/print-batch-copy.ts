@@ -16,14 +16,10 @@ export type PrintBatchCopy = {
   guideChooseBodyHancom: string;
   helpFile: string;
   helpPreview: string;
-  /** Shown only for a PDF of more than one page, so no singular is needed. */
   pages: string;
-  /** What lives behind each picker button, so the visitor knows which to tap. */
   photosHint: string;
   filesHint: string;
-  /** "{{time}}" is the claimed session's remaining time, as m:ss. */
   timeLeft: string;
-  /** The three things that happen after the print button, as a checklist. */
   stepPrepare: string;
   stepSend: string;
   stepPrint: string;

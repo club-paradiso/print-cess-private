@@ -148,12 +148,6 @@ function buildPageContent(page: PdfImagePage, glyphs: GlyphMap): Uint8Array {
   return text(commands.join("\n"));
 }
 
-/**
- * Builds a small, standards-compliant PDF directly from normalized JPEG pages.
- * Optional OCR words are written as an invisible Unicode text layer over the
- * page image. The scan therefore stays local while still being searchable and
- * copyable in PDF readers that honor ToUnicode maps.
- */
 export function buildScannedPdf(pages: readonly PdfImagePage[]): Uint8Array {
   if (pages.length === 0) throw new Error("scanNeedsPage");
 

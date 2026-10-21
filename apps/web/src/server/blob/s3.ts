@@ -29,11 +29,6 @@ type S3Settings = {
   forcePathStyle: boolean;
 };
 
-/**
- * S3-compatible (Railway private Bucket) blob transport. Uploads and downloads
- * happen directly against presigned URLs; the app only ever brokers small JSON.
- * The bucket is expected to be private — no ACL is ever set to public.
- */
 export class S3BlobTransport implements BlobTransport {
   readonly #client: S3Client;
   readonly #bucket: string;
@@ -59,9 +54,6 @@ export class S3BlobTransport implements BlobTransport {
     options?: UploadAuthorizationOptions,
   ): Promise<SignedBlobOperation> {
     assertPath(pathname);
-    // ContentType is signed into the URL, so the phone must send exactly these
-    // headers. A print upload also carries a fresh-object precondition and can
-    // never overwrite; a retried drop part deliberately may.
     const allowOverwrite = options?.allowOverwrite === true;
     const command = new PutObjectCommand({
       Bucket: this.#bucket,
@@ -116,8 +108,6 @@ export class S3BlobTransport implements BlobTransport {
 
   public async delete(pathname: string, expectedEtag?: string): Promise<void> {
     assertPath(pathname);
-    // S3 DeleteObject has no portable conditional guard, so verify the ETag
-    // with a HEAD first when the caller committed one.
     if (expectedEtag) {
       let current: BlobMetadata;
       try {
@@ -149,7 +139,6 @@ export class S3BlobTransport implements BlobTransport {
     try {
       return await getSignedUrl(this.#client, command, { expiresIn });
     } catch {
-      // Never surface signer internals; they can include the endpoint.
       throw new ServiceError("unavailable", "The blob operation could not be authorized.", 503);
     }
   }
@@ -173,8 +162,6 @@ function readSettings(environment: NodeJS.ProcessEnv): S3Settings {
     bucket,
     accessKeyId,
     secretAccessKey,
-    // Default to virtual-hosted addressing; only force path-style when a bucket
-    // is known to require it.
     forcePathStyle: environment.S3_FORCE_PATH_STYLE === "true",
   };
 }
@@ -185,8 +172,6 @@ function assertPath(pathname: string): void {
   }
 }
 
-// S3 ETags arrive quoted and may carry a weak-validator prefix; reduce both
-// representations to a stable bare token for storage and comparison.
 function normalizeEtag(value: string | undefined): string {
   if (!value) return "";
   return value

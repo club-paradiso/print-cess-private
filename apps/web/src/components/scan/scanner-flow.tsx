@@ -12,18 +12,10 @@ import { useVisitorLocale } from "@/lib/use-visitor-locale";
 import { ScanComposer } from "./scan-composer";
 import { scanCopy } from "./scan-copy";
 
-// The Share flow (QR generation, chunked encryption, transfer client) is fetched
-// only when a visitor actually sends a scan on. Most scans end in a download or
-// a share sheet, and none of them should pay for the transfer code up front.
 const SendFlow = dynamic(() => import("@/components/drop/send-flow").then((m) => m.SendFlow), {
   ssr: false,
 });
 
-/**
- * Paper in, a PDF out, and then wherever the visitor wants it to go. The PDF is
- * made on this phone; it leaves only through a destination the visitor picks,
- * and each destination says what it actually did.
- */
 export function ScannerFlow({ initialLocale }: { initialLocale?: SupportedLocale }) {
   const [locale, setLocale, text] = useVisitorLocale(initialLocale);
   const copy = scanCopy(locale);
@@ -45,7 +37,6 @@ export function ScannerFlow({ initialLocale }: { initialLocale?: SupportedLocale
     setFile(next);
     setPreviewUrl(URL.createObjectURL(next));
     setNotice("");
-    // Asked of this exact file: a browser can share links and still refuse a PDF.
     setCanSystemShare(
       typeof navigator.share === "function" && navigator.canShare?.({ files: [next] }) === true,
     );
@@ -65,8 +56,6 @@ export function ScannerFlow({ initialLocale }: { initialLocale?: SupportedLocale
     link.href = previewUrl;
     link.download = file.name;
     link.click();
-    // A download was handed to the browser. Where it lands is the browser's
-    // answer, not ours, so this says "started" and nothing more.
     setNotice(copy.downloaded);
   }, [copy.downloaded, file, previewUrl]);
 
@@ -90,9 +79,6 @@ export function ScannerFlow({ initialLocale }: { initialLocale?: SupportedLocale
     frame.src = previewUrl;
   }, [copy.printHint, previewUrl]);
 
-  // Sending the scan to another device is the Share flow itself, holding this
-  // PDF as if it had just been picked. Nothing is uploaded until the visitor
-  // presses send there, and the way back keeps the scan.
   if (file && handingOff) {
     return (
       <SendFlow

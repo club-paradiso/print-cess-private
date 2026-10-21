@@ -22,22 +22,11 @@ export async function POST(request: Request) {
     enforceRateLimit(`drop-create:${clientAddress(request)}`, 10, 60_000);
 
     const body = await readJson(request, createDropRequestSchema, MAX_DROP_MANIFEST_BYTES + 2048);
-    // The ceiling is a size, so it is checked against a size. Deriving a part
-    // ceiling from it instead used to refuse twenty one-kilobyte files on a
-    // deployment configured for sixty-four megabytes, because twenty parts
-    // exceeded the eight the division produced. The schema has already pinned
-    // the part count to what this many bytes can legitimately need, so the two
-    // numbers cannot disagree.
     if (body.totalBytes > server.config.dropMaxTotalBytes) {
       throw new ServiceError("payload_too_large", "This transfer is larger than the limit.", 413);
     }
     const drop = await createDrop(body);
 
-    // QStash deployments do not have the Railway worker's periodic sweep. A
-    // newly created drop therefore needs its own expiry-time sweep scheduled
-    // before we tell the sender that the transfer exists. If scheduling fails,
-    // roll the still-empty record back so no unscheduled ciphertext can later
-    // be uploaded under it.
     if (server.cleanup.scheduleSweep) {
       try {
         await server.cleanup.scheduleSweep(drop.expiresAt);

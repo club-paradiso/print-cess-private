@@ -25,11 +25,6 @@ import { useVisitorLocale, type Text } from "@/lib/use-visitor-locale";
 
 export type { Text };
 
-/**
- * Both halves of the hand-off and the printing flow resolve the visitor's
- * language the same way, through one hook, so they cannot drift into two
- * answers to the same question.
- */
 export const useDropLocale = useVisitorLocale;
 
 export function DropShell({
@@ -43,8 +38,6 @@ export function DropShell({
   text: Text;
   children: ReactNode;
 }) {
-  // Sending and receiving are two sides of one capability, so both carry the
-  // same name above their own heading.
   return (
     <ScreenShell>
       <AppTopbar
@@ -92,14 +85,6 @@ export function TransferBar({
   );
 }
 
-/**
- * One file in a list, on either side of a hand-off.
- *
- * The icon and the category come from the extension and the declared media
- * type alone. Nothing here opens the file to find out what it is: a hand-off
- * service that parses arbitrary formats to choose a picture has taken on every
- * parser as an attack surface, in exchange for an icon.
- */
 export function FileRow({
   file,
   text,
@@ -107,7 +92,6 @@ export function FileRow({
 }: {
   file: { name: string; size: number; type: string };
   text: Text;
-  /** Something the caller already knows without opening the file, like pages. */
   detail?: string | undefined;
 }) {
   const kind = dropFileKind(file.name, file.type);

@@ -2,10 +2,6 @@ import type { PairingRecord, PairingShape } from "@print-cess/protocol";
 
 import { ServiceError } from "../errors";
 
-/**
- * Missing, expired, and wrong-shape attempts have one answer. Revealing which
- * half matched would turn the four shapes into an oracle over the 100 codes.
- */
 export function pairingNotFound(): ServiceError {
   return new ServiceError(
     "not_found",

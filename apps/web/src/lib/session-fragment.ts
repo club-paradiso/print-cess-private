@@ -15,8 +15,6 @@ export function parseSessionFragment(hash: string): SessionFragment | null {
   const fingerprint = parameters.get("fp");
   if (!uploadToken || !fingerprint) return null;
   if (!DIGEST_PATTERN.test(uploadToken) || !DIGEST_PATTERN.test(fingerprint)) return null;
-  // Read independently. Inferring one capability from another silently
-  // overrides the kiosk's own declaration and creates rolling-deploy failures.
   const supportsHwpx = parameters.get("hwpx") === "1";
   const supportsHwp = parameters.get("hwp") === "1";
   const supportsBundle = parameters.get("bundle") === "1";

@@ -45,7 +45,6 @@ describe("parseDropCode", () => {
   });
 
   it("folds the four letters the alphabet leaves out onto their look-alikes", () => {
-    // I and L read as one, O reads as zero, U reads as V.
     expect(parseDropCode("OI23-4567-89AB")).toBe("0123456789AB");
     expect(parseDropCode("lu23-4567-89ab")).toBe("1V23456789AB");
   });
@@ -58,9 +57,6 @@ describe("parseDropCode", () => {
   });
 
   it("reads a link from another deployment, which then simply finds nothing", () => {
-    // Extracting the code is safe: nothing navigates to the foreign origin, and
-    // a code minted elsewhere resolves to no transfer here, which is exactly
-    // what the visitor should be told.
     expect(parseDropCode(`https://another.example/receive#c=${CODE}`)).toBe(CODE);
   });
 
@@ -78,8 +74,6 @@ describe("parseDropCode", () => {
   });
 
   it("never assembles a code out of a hostname", () => {
-    // The old field normalized the whole string and took the first twelve
-    // characters, which turned this into `HTTPS23456789` and opened nothing.
     expect(parseDropCode("https://abcdefgh2345.example/")).toBeNull();
     expect(parseDropCode("print-cess.example/receive")).toBeNull();
   });

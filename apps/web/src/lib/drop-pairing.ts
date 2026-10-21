@@ -28,7 +28,6 @@ async function pairingJson<T>(url: string, init: RequestInit, signal?: AbortSign
   return body;
 }
 
-/** Escrows the transfer code for the sender's chosen shape for three minutes. */
 export async function openPairing(
   transferCode: string,
   shape: PairingShape,
@@ -46,7 +45,6 @@ export async function openPairing(
   return { ...claimed, shape };
 }
 
-/** One request and one chance: the server consumes a live code before checking. */
 export async function redeemPairing(
   code: string,
   shape: PairingShape,

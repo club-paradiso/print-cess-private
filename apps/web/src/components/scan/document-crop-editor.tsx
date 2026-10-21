@@ -86,7 +86,6 @@ export function DocumentCropEditor({
         </div>
 
         <div className="scan-crop-media">
-          {/* This is a local object URL and must not go through remote image optimization. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={previewUrl} alt="" />
           <svg

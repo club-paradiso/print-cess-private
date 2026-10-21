@@ -8,12 +8,6 @@ const TABLE_NAME = "print_cess_pairing_state_v1";
 
 type PairingRow = { pairing: unknown; expires_at: string | number };
 
-/**
- * Pairing storage on Railway PostgreSQL. A code is taken with a conditional
- * insert that also reclaims an expired row, so the hundred available codes
- * recycle without a sweep and two senders reaching for the same digits produce
- * one winner rather than one overwrite.
- */
 export class RailwayPostgresPairingStore implements PairingStore {
   readonly #executor: PostgresExecutor;
   #schema: Promise<void> | null = null;
@@ -27,9 +21,6 @@ export class RailwayPostgresPairingStore implements PairingStore {
     candidates: readonly string[],
   ): Promise<PairingRecord | null> {
     await this.ensureSchema();
-    // The table can hold at most one row per two-digit code, so pruning on
-    // ordinary pairing traffic is bounded and keeps expired escrow out of
-    // persistent storage even when its particular code is not selected next.
     await this.#executor.query(`DELETE FROM ${TABLE_NAME} WHERE expires_at <= $1`, [
       pairing.createdAt,
     ]);
@@ -74,12 +65,7 @@ export class RailwayPostgresPairingStore implements PairingStore {
     now: number,
   ): Promise<PairingRecord> {
     await this.ensureSchema();
-    // Return the deleted record from the transaction, then validate it after
-    // COMMIT. Throwing a shape mismatch inside the callback would ROLLBACK the
-    // DELETE and let a caller try the other three shapes against the same code.
     const stored = await this.#executor.transaction(`pairing:${code}`, async (client) => {
-      // Delete first and inspect the returned record second. A wrong shape is
-      // therefore consumed just as atomically as a correct one.
       const result = await client.query<PairingRow>(
         `DELETE FROM ${TABLE_NAME} WHERE code = $1 RETURNING pairing, expires_at`,
         [code],
@@ -106,7 +92,6 @@ export class RailwayPostgresPairingStore implements PairingStore {
         )
       `);
     })().catch((error: unknown) => {
-      // A failed migration must not be cached as "done" for the process life.
       this.#schema = null;
       throw error;
     });

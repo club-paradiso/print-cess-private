@@ -9,11 +9,6 @@ import { getRuntime, signedExpiry } from "@/server/runtime";
 
 export const runtime = "nodejs";
 
-/**
- * Signed read URLs for a batch of parts. They are re-issued on demand so a
- * download that stalls on a weak connection resumes from the part it reached
- * instead of restarting the whole transfer.
- */
 export async function POST(request: Request, context: { params: Promise<{ dropId: string }> }) {
   try {
     const server = getRuntime();
@@ -51,10 +46,6 @@ export async function POST(request: Request, context: { params: Promise<{ dropId
       });
     }
 
-    // Counted once per batch that starts at the first part. This is the point
-    // at which a download has started, and no more than that: whether any byte
-    // reached the other phone's storage is something only that phone can
-    // report, which it does through the receipt endpoint.
     if (body.indexes.includes(0)) {
       await server.drops
         .recordReceiverEvent(dropId, "downloading", Date.now())

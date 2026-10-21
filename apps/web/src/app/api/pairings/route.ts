@@ -13,21 +13,12 @@ import { getRuntime } from "@/server/runtime";
 
 export const runtime = "nodejs";
 
-/**
- * How many of the hundred codes one sender is allowed to try before being told
- * to wait. Walking the whole space would let a single phone discover which
- * codes are in use, which is exactly the map a guesser wants.
- */
 const CLAIM_ATTEMPTS = 8;
 
 export async function POST(request: Request) {
   try {
     const server = getRuntime();
     assertAllowedOrigin(request, server.config);
-    // A hundred codes is the whole pool, so claiming them is bounded — but the
-    // bound is per address, and a café shares one. Kept loose enough that a
-    // busy counter is never the thing that runs out, and tight enough that one
-    // address cannot sit on the pool.
     enforceRateLimit(`pairing-create:${clientAddress(request)}`, 30, 60_000);
 
     const body = await readJson(request, createPairingRequestSchema, 4096);
@@ -54,11 +45,6 @@ export async function POST(request: Request) {
   }
 }
 
-/**
- * A shuffled sample rather than a scan from "00": handing out codes in order
- * would make the next one predictable, and a predictable code is one a guesser
- * can join before the person standing next to the sender does.
- */
 function drawCandidates(): string[] {
   const drawn = new Set<string>();
   while (drawn.size < CLAIM_ATTEMPTS) {

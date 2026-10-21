@@ -15,7 +15,6 @@ test("the root URL opens the shared display", async ({ page }) => {
   ).toBeVisible();
   await expect(page.locator(".kiosk-qr")).toBeVisible();
 
-  // The main page is also the way into everything else.
   const more = page.getByRole("navigation", { name: /다른 기능/u });
   for (const [name, href] of [
     [/파일 보내기/u, "/send"],
@@ -58,8 +57,6 @@ test("shows three simple QR steps without network jargon", async ({ page }) => {
 test("repeats the scan instruction in the other visitor languages", async ({ page }) => {
   const rotating = ["ar", "fil", "id", "km", "mn", "ne", "ru", "th", "uk", "vi", "zh-CN"];
   await page.goto("/kiosk");
-  // Chromium throttles timers in a background tab; a real kiosk is always the
-  // foreground tab.
   await page.bringToFront();
   const spotlight = page.locator(".kiosk-spotlight");
 
@@ -67,7 +64,6 @@ test("repeats the scan instruction in the other visitor languages", async ({ pag
   expect(rotating).toContain(first);
   expect((await spotlight.textContent())?.trim()).not.toBe("");
 
-  // The line advances on a timer, so the next language must differ.
   await expect.poll(() => spotlight.getAttribute("lang"), { timeout: 30_000 }).not.toBe(first);
   expect(rotating).toContain(await spotlight.getAttribute("lang"));
 });
@@ -92,7 +88,6 @@ test("keeps the primary camera instruction balanced and aligned", async ({ page 
   expect(firstBox).not.toBeNull();
   expect(secondBox).not.toBeNull();
   expect(englishBox).not.toBeNull();
-  // Each line starts at the same edge, and neither Korean line breaks.
   expect(Math.abs(firstBox!.x - secondBox!.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(firstBox!.x - englishBox!.x)).toBeLessThanOrEqual(1);
   expect(secondBox!.y).toBeGreaterThan(firstBox!.y);
@@ -102,8 +97,6 @@ test("keeps the primary camera instruction balanced and aligned", async ({ page 
 test("fits the whole waiting screen, QR code included, on one landscape screen", async ({
   page,
 }) => {
-  // One page load, then resized: every load mints a session against the
-  // per-counter creation limit, and the layout is pure CSS anyway.
   await page.goto("/kiosk");
   const frame = page.locator(".kiosk-qr__frame");
   await expect(frame).toBeVisible();
@@ -116,7 +109,6 @@ test("fits the whole waiting screen, QR code included, on one landscape screen",
     await page.setViewportSize({ width, height });
     const box = (await frame.boundingBox())!;
     const panel = (await page.locator(".kiosk-qr").boundingBox())!;
-    // The code is square and stays inside its panel and the screen.
     expect(Math.abs(box.width - box.height)).toBeLessThanOrEqual(2);
     expect(box.x).toBeGreaterThanOrEqual(panel.x);
     expect(box.x + box.width).toBeLessThanOrEqual(panel.x + panel.width + 1);

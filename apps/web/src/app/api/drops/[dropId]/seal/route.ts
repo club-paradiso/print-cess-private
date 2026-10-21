@@ -6,7 +6,6 @@ import { getRuntime } from "@/server/runtime";
 
 export const runtime = "nodejs";
 
-/** Closes a transfer for uploads and opens it for the receiving phone. */
 export async function POST(request: Request, context: { params: Promise<{ dropId: string }> }) {
   try {
     const server = getRuntime();

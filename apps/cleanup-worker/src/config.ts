@@ -14,11 +14,6 @@ const DEFAULT_BATCH_SIZE = 25;
 const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 const MINIMUM_SECRET_LENGTH = 32;
 
-/**
- * Validate and freeze the worker configuration. Fails closed: an invalid
- * endpoint, weak secret, or malformed interval throws instead of running with
- * an unsafe default. The endpoint must be an exact HTTPS `/api/cleanup` URL.
- */
 export function parseWorkerConfig(environment: NodeJS.ProcessEnv = process.env): WorkerConfig {
   const endpoint = environment.CLEANUP_ENDPOINT;
   if (!endpoint) throw new Error("CLEANUP_ENDPOINT is required");
