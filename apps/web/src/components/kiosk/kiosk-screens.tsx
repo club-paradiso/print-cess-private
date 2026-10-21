@@ -73,7 +73,13 @@ const SERVICES: {
   english: string;
   icon: typeof Send;
 }[] = [
-  { href: "/send", key: "homeShareCta", korean: "파일 보내기", english: "Send files", icon: Send },
+  {
+    href: "/send",
+    key: "homeShareCta",
+    korean: "파일 보내기",
+    english: "Send files",
+    icon: Send,
+  },
   {
     href: "/receive",
     key: "homeReceiveCta",
@@ -152,7 +158,8 @@ export function KioskWaitingScreen({
   const [spotlightIndex, setSpotlightIndex] = useState(0);
   useEffect(() => {
     const timer = window.setInterval(
-      () => setSpotlightIndex((index) => (index + 1) % SPOTLIGHT_LOCALES.length),
+      () =>
+        setSpotlightIndex((index) => (index + 1) % SPOTLIGHT_LOCALES.length),
       SPOTLIGHT_INTERVAL_MS,
     );
     return () => window.clearInterval(timer);
@@ -178,18 +185,25 @@ export function KioskWaitingScreen({
         {status === "preparing" ? (
           <p className="kiosk-availability" aria-live="polite">
             <span className="kiosk-availability__dot" />
-            {locale === "ko" ? "QR코드를 준비하고 있어요" : translate(locale, "kioskScanTitle")}
+            {locale === "ko"
+              ? "QR코드를 준비하고 있어요"
+              : translate(locale, "kioskScanTitle")}
           </p>
         ) : null}
         {services ? (
-          <nav className="kiosk-services" aria-label={translate(locale, "homeMoreTitle")}>
+          <nav
+            className="kiosk-services"
+            aria-label={translate(locale, "homeMoreTitle")}
+          >
             <ul>
               {SERVICES.map(({ href, key, korean, english, icon: Icon }) => (
                 <li key={href}>
                   <Link href={href}>
                     <Icon aria-hidden="true" />
                     <span>
-                      <strong>{locale === "ko" ? korean : translate(locale, key)}</strong>
+                      <strong>
+                        {locale === "ko" ? korean : translate(locale, key)}
+                      </strong>
                       <small lang="en">{english}</small>
                     </span>
                   </Link>
@@ -213,7 +227,11 @@ export function KioskWaitingScreen({
 
           <h1
             id="kiosk-title"
-            className={locale === "ko" ? "kiosk-title" : "kiosk-title kiosk-title--translated"}
+            className={
+              locale === "ko"
+                ? "kiosk-title"
+                : "kiosk-title kiosk-title--translated"
+            }
           >
             {locale === "ko" ? (
               <>
@@ -256,7 +274,9 @@ export function KioskWaitingScreen({
               </span>
               <div>
                 <strong>
-                  {locale === "ko" ? "QR코드 비추기" : translate(locale, "homePrintStepScan")}
+                  {locale === "ko"
+                    ? "QR코드 비추기"
+                    : translate(locale, "homePrintStepScan")}
                 </strong>
                 <small>
                   {locale === "ko"
@@ -275,7 +295,9 @@ export function KioskWaitingScreen({
               </span>
               <div>
                 <strong>
-                  {locale === "ko" ? "휴대전화에서 파일 고르기" : translate(locale, "homePrintStepPick")}
+                  {locale === "ko"
+                    ? "휴대전화에서 파일 고르기"
+                    : translate(locale, "homePrintStepPick")}
                 </strong>
                 {maxFiles ? (
                   <small>
@@ -303,7 +325,9 @@ export function KioskWaitingScreen({
               </span>
               <div>
                 <strong>
-                  {locale === "ko" ? "프린터에서 종이 받기" : translate(locale, "homePrintStepCollect")}
+                  {locale === "ko"
+                    ? "프린터에서 종이 받기"
+                    : translate(locale, "homePrintStepCollect")}
                 </strong>
                 <small>
                   {locale === "ko"
@@ -323,13 +347,17 @@ export function KioskWaitingScreen({
           // End-to-end tests need to read it, but a Production kiosk must not
           // publish it as page text where a DOM snapshot or an extension could
           // pick it up; the QR image alone is enough there.
-          data-session-url={process.env.NODE_ENV === "production" ? undefined : session?.qrUrl}
+          data-session-url={
+            process.env.NODE_ENV === "production" ? undefined : session?.qrUrl
+          }
         >
           <p className="kiosk-qr__instruction">
             <Camera aria-hidden="true" />
             <span>
               <strong>
-                {locale === "ko" ? "QR코드를 카메라로 비추세요" : translate(locale, "kioskScanTitle")}
+                {locale === "ko"
+                  ? "QR코드를 카메라로 비추세요"
+                  : translate(locale, "kioskScanTitle")}
               </strong>
               <small>사진을 찍을 필요는 없습니다 · No photo needed</small>
             </span>
@@ -339,7 +367,10 @@ export function KioskWaitingScreen({
               <ScanFrame />
               {session ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={session.qrImage} alt={translate(locale, "kioskScanTitle")} />
+                <img
+                  src={session.qrImage}
+                  alt={translate(locale, "kioskScanTitle")}
+                />
               ) : (
                 <div className="kiosk-qr__loading" aria-busy="true" />
               )}
@@ -395,7 +426,8 @@ export function KioskWaitingScreen({
         <p className="kiosk-languages">
           <Languages aria-hidden="true" />
           <span>
-            {SUPPORTED_LOCALES.length} languages · {translate(locale, "selectLanguage")}
+            {SUPPORTED_LOCALES.length} languages ·{" "}
+            {translate(locale, "selectLanguage")}
           </span>
         </p>
       </footer>
@@ -415,10 +447,30 @@ const JOURNEY: {
   english: string;
   icon: typeof Smartphone;
 }[] = [
-  { status: "claimed", korean: "연결됨", english: "Connected", icon: Smartphone },
-  { status: "uploading", korean: "도착하는 중", english: "Arriving", icon: UploadCloud },
-  { status: "validating", korean: "확인하는 중", english: "Checking", icon: FileSearch },
-  { status: "printing", korean: "인쇄하는 중", english: "Printing", icon: Printer },
+  {
+    status: "claimed",
+    korean: "연결됨",
+    english: "Connected",
+    icon: Smartphone,
+  },
+  {
+    status: "uploading",
+    korean: "도착하는 중",
+    english: "Arriving",
+    icon: UploadCloud,
+  },
+  {
+    status: "validating",
+    korean: "확인하는 중",
+    english: "Checking",
+    icon: FileSearch,
+  },
+  {
+    status: "printing",
+    korean: "인쇄하는 중",
+    english: "Printing",
+    icon: Printer,
+  },
 ];
 
 const JOURNEY_ORDER: KioskStatus[] = [
@@ -447,7 +499,11 @@ function connectedCopy(status: KioskStatus): {
       hint: "프린터 앞에서 종이를 기다려 주세요",
     };
   }
-  if (status === "uploading" || status === "uploaded" || status === "validating") {
+  if (
+    status === "uploading" ||
+    status === "uploaded" ||
+    status === "validating"
+  ) {
     return {
       headline: "파일을 받고 있어요",
       english: "Receiving your files",
@@ -479,7 +535,11 @@ export function ConnectedScreen({
   const reached = JOURNEY_ORDER.indexOf(status);
   const copy = connectedCopy(status);
   const TokenIcon =
-    status === "printing" ? Printer : status === "claimed" ? Smartphone : FileSearch;
+    status === "printing"
+      ? Printer
+      : status === "claimed"
+        ? Smartphone
+        : FileSearch;
   return (
     <main
       className="kiosk-shell kiosk-shell--connected"
@@ -513,8 +573,16 @@ export function ConnectedScreen({
             const at = JOURNEY_ORDER.indexOf(step.status);
             // "uploaded" sits between arriving and checking; it is still the
             // arriving stage as far as the room is concerned.
-            const effective = status === "uploaded" ? JOURNEY_ORDER.indexOf("uploading") : reached;
-            const state = effective > at ? "is-done" : effective === at ? "is-active" : undefined;
+            const effective =
+              status === "uploaded"
+                ? JOURNEY_ORDER.indexOf("uploading")
+                : reached;
+            const state =
+              effective > at
+                ? "is-done"
+                : effective === at
+                  ? "is-active"
+                  : undefined;
             const Icon = state === "is-done" ? CheckCircle2 : step.icon;
             return (
               <li
@@ -541,7 +609,9 @@ export function ConnectedScreen({
         <div className="kiosk-status-row" aria-live="polite">
           {/* The headline already says the stage to anyone looking; this
               copy is for a screen reader, which hears it as it changes. */}
-          <strong className="drop-visually-hidden">{statusLabel(status)}</strong>
+          <strong className="drop-visually-hidden">
+            {statusLabel(status)}
+          </strong>
           <span className="kiosk-countdown">
             남은 시간 <b>{formatTime(remaining)}</b>
           </span>
@@ -576,7 +646,9 @@ export function CompletedScreen({
         <KioskLanguagePicker locale={locale} onChange={onLocaleChange} />
       </div>
       <CheckCircle2 aria-hidden="true" />
-      <h1>{automaticPrinting ? "인쇄가 시작됐어요" : "인쇄 준비가 끝났어요"}</h1>
+      <h1>
+        {automaticPrinting ? "인쇄가 시작됐어요" : "인쇄 준비가 끝났어요"}
+      </h1>
       {/* The one thing left to do, said louder than anything else on the
           screen: the paper is at the printer, not here. */}
       <p className="kiosk-result__next">
@@ -618,7 +690,9 @@ export function CompletedScreen({
             // a second `print-cess-` prefix in front of that name is noise on
             // the counter staff's download.
             download={
-              artifacts.length === 1 ? artifact.filename : `${index + 1}-${artifact.filename}`
+              artifacts.length === 1
+                ? artifact.filename
+                : `${index + 1}-${artifact.filename}`
             }
             className="kiosk-download"
           >
@@ -645,7 +719,8 @@ export function CompletedScreen({
 }
 
 async function printAll(artifacts: readonly PrintArtifact[]) {
-  for (const artifact of artifacts) await printArtifact(artifact).catch(() => undefined);
+  for (const artifact of artifacts)
+    await printArtifact(artifact).catch(() => undefined);
 }
 
 /** How long the failure screen waits before trying for a fresh QR code. */
@@ -670,7 +745,10 @@ export function UnavailableScreen({
       () => setRetryIn(Math.max(0, Math.ceil((deadline - Date.now()) / 1000))),
       250,
     );
-    const timeout = window.setTimeout(onReset, UNAVAILABLE_RETRY_SECONDS * 1000);
+    const timeout = window.setTimeout(
+      onReset,
+      UNAVAILABLE_RETRY_SECONDS * 1000,
+    );
     return () => {
       window.clearInterval(interval);
       window.clearTimeout(timeout);
