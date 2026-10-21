@@ -26,6 +26,29 @@ The complete setup, security boundaries, test commands, macOS browser-kiosk proc
 deployment procedure, and remaining production blockers are documented in `docs/`. Never use real
 personal documents in development, Preview, fixtures, or CI.
 
+## Government and public-sector printing
+
+Print-cess is specialized for no-install document printing and file hand-off at
+government counters, including immigration offices:
+
+- **Visitor print mode** at `/visitor`: a counter screen shows a QR code, the
+  print progress (scan → upload → counter print → auto-destroy), and a session
+  expiry timer. Visitors scan the QR with their own phone and upload documents —
+  no login, app install, or sign-up.
+- **Automatic file destruction**: uploaded documents are deleted from the server
+  as soon as printing finishes or the session expires. Phone-to-phone transfers
+  carry an expiry (30 minutes by default, configurable via `DROP_TTL_SECONDS`)
+  and are swept automatically when it elapses.
+- **No policy bypass**: Print-cess uses standard browser HTTPS and Web Crypto
+  and never attempts to bypass DLP, download controls, proxies, network
+  separation, or domain allowlists. Managed workstations keep using
+  `/workstation`.
+
+See `docs/government-deployment-guide.md` for the agency onboarding procedure
+(the six production gates as a checklist) and
+`docs/immigration-office-scenario.md` for the immigration-office visitor
+document printing scenario.
+
 ## Required tools
 
 - Node.js 24.18.0 and pnpm 11.15.1 through Corepack;
@@ -42,7 +65,7 @@ cp .env.example apps/web/.env.local
 pnpm dev
 ```
 
-Open `http://localhost:3000/` (the shared display; `/kiosk` is the same screen), scan the generated QR with a phone on the same reachable
+Open `http://localhost:3000/kiosk`, scan the generated QR with a phone on the same reachable
 development URL, or open its mobile link in another browser tab. Local mode stores ciphertext
 only under an application-owned development directory. Open `http://localhost:3000/workstation`
 to exercise the managed-workstation entry and local browser capability diagnostics.
