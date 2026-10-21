@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { BatchKioskSimulator } from "@/components/kiosk/batch-kiosk-simulator";
 import { isBrowserKioskEnabled } from "@/server/demo";
-import { requestLocale } from "@/lib/request-locale";
+import { requestKioskLocale } from "@/lib/request-locale";
 
 export default async function RootPage({
   searchParams,
@@ -11,7 +11,7 @@ export default async function RootPage({
 }) {
   if (process.env.NODE_ENV === "production" && !isBrowserKioskEnabled()) redirect("/start");
   const { printing, sound } = await searchParams;
-  const locale = await requestLocale();
+  const locale = await requestKioskLocale();
   return (
     <BatchKioskSimulator
       automaticPrinting={printing === "auto"}
