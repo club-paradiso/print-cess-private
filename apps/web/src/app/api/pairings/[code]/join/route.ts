@@ -14,12 +14,6 @@ import { getRuntime } from "@/server/runtime";
 
 export const runtime = "nodejs";
 
-/**
- * Redeems two digits plus one shape exactly once. The store consumes a live
- * record before it checks the shape, so trying a second shape cannot reveal
- * anything. Misses also spend from a deliberately slow IP budget; successful
- * hand-offs do not, so one café is not rationed by legitimate use.
- */
 export async function POST(request: Request, context: { params: Promise<{ code: string }> }) {
   try {
     const server = getRuntime();

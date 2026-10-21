@@ -33,10 +33,6 @@ export async function POST(request: Request) {
       60_000,
     );
 
-    // This endpoint is only used by the routed batch-capable browser kiosk.
-    // Declare that invariant at the server boundary too, so a stale/cached
-    // browser bundle cannot accidentally mint a QR that hides functionality
-    // the receiving kiosk actually supports.
     const input = {
       ...(await readJson(request, createSessionRequestSchema)),
       supportsBundle: true,

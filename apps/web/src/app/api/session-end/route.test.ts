@@ -29,8 +29,6 @@ describe("session end route", () => {
   });
 
   it("never asks the browser to reload the finished page", async () => {
-    // `executionContexts` would reload the phone onto a spent session and show
-    // an error in place of the confirmation that printing is done.
     const response = await POST(
       new Request("http://localhost:3000/api/session-end", {
         method: "POST",
