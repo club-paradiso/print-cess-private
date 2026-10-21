@@ -103,7 +103,7 @@ describe("a file the visitor chose a place for", () => {
     const picker = vi.fn(async () => handle);
     (window as PickerWindow).showSaveFilePicker = picker;
 
-    const target = await pickSaveTarget({ name: "report.pdf", type: "application/pdf", size: 10 });
+    const target = await pickSaveTarget({ name: "report.pdf", type: "application/pdf", size: 10 }, { preferFilePicker: true });
     expect(target.kind).toBe("picked-file");
     expect(target.outcome).toBe("saved");
 
@@ -120,7 +120,7 @@ describe("a file the visitor chose a place for", () => {
     const picker = vi.fn(async () => ({ createWritable: async () => fakeWritable().stream }));
     (window as PickerWindow).showSaveFilePicker = picker;
 
-    await pickSaveTarget({ name: "전입신고서.hwpx", type: "application/hwp+zip", size: 10 });
+    await pickSaveTarget({ name: "전입신고서.hwpx", type: "application/hwp+zip", size: 10 }, { preferFilePicker: true });
 
     expect(picker).toHaveBeenCalledWith(
       expect.objectContaining({ suggestedName: "전입신고서.hwpx" }),
@@ -133,7 +133,7 @@ describe("a file the visitor chose a place for", () => {
     });
 
     await expect(
-      pickSaveTarget({ name: "report.pdf", type: "application/pdf", size: 10 }),
+      pickSaveTarget({ name: "report.pdf", type: "application/pdf", size: 10 }, { preferFilePicker: true }),
     ).rejects.toMatchObject({ code: "dropSaveCancelled" });
   });
 
@@ -149,13 +149,25 @@ describe("a file the visitor chose a place for", () => {
       createWritable: async () => stream,
     }));
 
-    const target = await pickSaveTarget({ name: "a.bin", type: "", size: 1 });
+    const target = await pickSaveTarget({ name: "a.bin", type: "", size: 1 }, { preferFilePicker: true });
     const sink = await target.open({ name: "a.bin", type: "" });
     await expect(sink.finish()).rejects.toThrow(/disk full/u);
   });
 });
 
 describe("the download fallback", () => {
+  it("never opens the Chromium save picker for a default download", async () => {
+    const picker = vi.fn(async () => {
+      throw new Error("File picker must be an explicit opt-in");
+    });
+    (window as PickerWindow).showSaveFilePicker = picker;
+
+    const target = await pickSaveTarget({ name: "report.pdf", type: "application/pdf", size: 10 });
+    expect(target.kind).toBe("download");
+    expect(target.outcome).toBe("downloadStarted");
+    expect(picker).not.toHaveBeenCalled();
+  });
+
   it("reports a started download rather than a save", async () => {
     const anchorClick = vi
       .spyOn(HTMLAnchorElement.prototype, "click")
