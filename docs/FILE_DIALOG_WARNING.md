@@ -30,15 +30,14 @@ anything was read or sent.
 
 ## Where Print-cess can and cannot produce it
 
-| Path                                                                                          | Calls `showSaveFilePicker`?  |
-| --------------------------------------------------------------------------------------------- | ---------------------------- |
-| Browser kiosk printing, `apps/web/src/lib/kiosk-print.ts` (`printArtifact`, `printArtifacts`) | No                           |
-| Kiosk completion screen, "파일 다운로드 (직원용)" (`<a download>`)                            | No (ordinary download)       |
-| Scan, "print" (`apps/web/src/components/scan/scanner-flow.tsx`, hidden iframe)                | No                           |
-| Native Windows kiosk (`apps/kiosk`, WPF, `System.Printing`, never opens a dialog)             | No (no Chromium at all)      |
-| Share receive, **"저장하기 / Save"** (`/receive`, `pickSaveTarget`)                           | **No**, normal download      |
-| Share receive, **"모두 저장"** (`/receive`, default action)                                    | **No**, normal downloads     |
-| Share receive, "폴더에 모두 저장하기…" (`showDirectoryPicker`, explicitly selected)          | No (different title)         |
+Ordinary file saves do not request file-system permission in these paths:
+
+- Browser kiosk printing, staff downloads, and Scan printing.
+- Native Windows kiosk printing, which does not use Chromium.
+- `/receive` single-file Save and default Save all: ordinary browser downloads.
+
+The separately selected `/receive` "Save all to folder" action does call
+`showDirectoryPicker()`, which uses a different browser permission title.
 
 The only `showSaveFilePicker()` call is `openFilePicker()` in
 `apps/web/src/lib/drop-save.ts`. As of 2026-10-21, it is gated behind an explicit
