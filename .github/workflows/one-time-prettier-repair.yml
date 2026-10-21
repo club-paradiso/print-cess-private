@@ -1,0 +1,35 @@
+name: One-time PR 150 formatting repair
+
+on:
+  push:
+    branches:
+      - feat/main-page-language-selector-20261021
+
+permissions:
+  contents: write
+
+jobs:
+  autoformat:
+    if: github.event.head_commit.message == 'chore: run one-time Prettier repair for PR 150'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Format two failing files and delete this temporary workflow
+        run: |
+          pnpm exec prettier --write apps/web/src/app/kiosk/page.tsx apps/web/src/components/kiosk/kiosk-screens.tsx
+          git rm -- .github/workflows/one-time-prettier-repair.yml
+          git add -- apps/web/src/app/kiosk/page.tsx apps/web/src/components/kiosk/kiosk-screens.tsx
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style: apply pinned Prettier to PR 150 kiosk screens"
+          git push origin HEAD:feat/main-page-language-selector-20261021
