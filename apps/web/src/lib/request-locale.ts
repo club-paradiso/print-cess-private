@@ -21,3 +21,14 @@ export async function requestLocale(): Promise<SupportedLocale> {
     matchAcceptLanguage(requestHeaders.get("accept-language"))
   );
 }
+
+/**
+ * A shared print station retains its Korean first-screen default. Unlike
+ * a visitor's private phone, the station browser's language setting is not a
+ * reliable indication of the next visitor's language. An explicit choice
+ * persists across reloads through the same allowlisted preference cookie.
+ */
+export async function requestKioskLocale(): Promise<SupportedLocale> {
+  const requestHeaders = await headers();
+  return preferredLocaleFromCookie(requestHeaders.get("cookie")) ?? "ko";
+}
