@@ -156,13 +156,12 @@ say. This distinction is the point of the module: a file written through a
 handle the visitor chose is **saved**, and a blob handed to the download
 machinery has **started a download** and nothing more.
 
-| Destination               | Chosen when                                    | The screen says     |
-| ------------------------- | ---------------------------------------------- | ------------------- |
-| File picked for direct write | Explicit `preferFilePicker: true` (not used by default receive UI) | Saved               |
-| Folder the visitor picked   | Explicit "Save all to folder" action, when supported               | Saved               |
-| Private origin storage      | Default download with OPFS; staged, then downloaded               | Download started    |
-| Memory                      | Default download when OPFS is unavailable                         | Download started    |
-| System share sheet          | `navigator.canShare({ files })` accepts a file                    | Sent to another app |
+Normal `/receive` Save and Save all actions use a browser download, staged in
+private origin storage where available (or memory otherwise), and report
+`downloadStarted`. Explicit direct folder saves report `saved` only after
+writing and closing the file. A direct file picker remains available to internal
+callers with `preferFilePicker: true`, but the default receive UI does not call it.
+The system share sheet separately reports delivery to another app.
 
 Normal "Save" and "Save all" on `/receive` use ordinary browser downloads,
 including on Chromium desktop. The user may separately select "Save all to folder"
