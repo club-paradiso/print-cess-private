@@ -43,9 +43,6 @@ const sessionReceiptSchema = z
   })
   .strict();
 
-// The Lua bodies below are byte-for-byte identical to the Upstash adapter so
-// that atomicity, CAS, orphan tracking, TTL, and cleanup sealing keep exactly
-// the same server-side semantics on a standard Redis server.
 const CREATE_SCRIPT = `
 if redis.call('EXISTS', KEYS[1]) == 1 or redis.call('EXISTS', KEYS[2]) == 1 then return 0 end
 redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
@@ -589,8 +586,6 @@ function deserialize(raw: unknown): unknown {
   return typeof raw === "string" ? JSON.parse(raw) : raw;
 }
 
-// Standard Redis integer replies arrive as JS numbers, but some clients surface
-// them as numeric strings; normalize either representation explicitly.
 function toInteger(value: unknown): number {
   if (typeof value === "number") return value;
   if (typeof value === "bigint") return Number(value);

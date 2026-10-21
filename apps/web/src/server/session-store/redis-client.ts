@@ -23,21 +23,13 @@ function createRedisClient(url: string) {
     url,
     socket: {
       connectTimeout: CONNECT_TIMEOUT_MS,
-      // node-redis enables TLS automatically for rediss:// and verifies the
-      // server certificate; do not weaken that here.
       reconnectStrategy: (retries) => Math.min(MAX_RECONNECT_DELAY_MS, 100 * 2 ** retries),
     },
   });
 }
 
-// node-redis infers the client's generics from the options object, so the type
-// has to come from this call site. `ReturnType<typeof createClient>` widens
-// them to their constraints instead, which is a different, unassignable
-// instantiation.
 type NodeRedisClient = ReturnType<typeof createRedisClient>;
 
-// Serverless invocations reuse the same module instance, so cache one connected
-// client per URL instead of opening a socket on every request.
 const clients = new Map<string, { client: NodeRedisClient; ready: Promise<NodeRedisClient> }>();
 
 export function createNodeRedisScriptClient(
@@ -58,7 +50,6 @@ function assertTlsUrl(url: string): void {
   } catch {
     throw new Error("REDIS_URL must be a valid Redis connection URL");
   }
-  // TLS is mandatory; certificate verification must never be disabled.
   if (parsed.protocol !== "rediss:") {
     throw new Error("REDIS_URL must use a TLS connection (rediss://)");
   }
@@ -72,8 +63,6 @@ class NodeRedisScriptClient implements RedisScriptClient {
     if (cached) return cached.ready;
 
     const client = createRedisClient(this.url);
-    // A missing error listener turns transient socket errors into unhandled
-    // exceptions. Swallow only the event object (never a credential).
     client.on("error", () => {});
 
     const ready = client
@@ -124,8 +113,6 @@ class NodeRedisScriptClient implements RedisScriptClient {
   }
 }
 
-// Never surface the raw error (it can embed the connection URL with its
-// password). Reduce it to a coarse, credential-free class name.
 function classifyError(error: unknown): string {
   if (error && typeof error === "object" && "code" in error && typeof error.code === "string") {
     return error.code;

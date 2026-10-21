@@ -76,9 +76,6 @@ class NodePostgresExecutor implements PostgresExecutor {
       ssl: {
         ca,
         rejectUnauthorized: true,
-        // Railway's database certificate can be issued for an internal TLS
-        // identity such as localhost while the TCP proxy has a generated host.
-        // Verify that identity explicitly instead of disabling hostname checks.
         servername: tlsServerName,
       },
     });
@@ -184,14 +181,11 @@ async function rollbackQuietly(client: PoolClient): Promise<void> {
   try {
     await client.query("ROLLBACK");
   } catch {
-    // Preserve the original error and never include the credential-bearing URL.
   }
 }
 
 function connectionError(error: unknown): ServiceError {
   const reason = classifyError(error);
-  // Keep diagnostics credential-free: only the driver/runtime classification
-  // is emitted, never the URL, query, certificate, or server response.
   console.error(JSON.stringify({ event: "postgres_connection_error", reason }));
   return new ServiceError("unavailable", `PostgreSQL connection failed (${reason}).`, 503);
 }
