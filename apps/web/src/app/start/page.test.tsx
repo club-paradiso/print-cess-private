@@ -1,9 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { acceptLanguage } = vi.hoisted(() => ({ acceptLanguage: { value: "" } }));
+const { acceptLanguage, preferredCookie } = vi.hoisted(() => ({
+  acceptLanguage: { value: "" },
+  preferredCookie: { value: "" },
+}));
 
 vi.mock("next/headers", () => ({
-  headers: () => Promise.resolve(new Headers({ "accept-language": acceptLanguage.value })),
+  headers: () =>
+    Promise.resolve(
+      new Headers({ "accept-language": acceptLanguage.value, cookie: preferredCookie.value }),
+    ),
 }));
 
 import HomePage from "./page";
@@ -65,6 +71,7 @@ describe("home page", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     acceptLanguage.value = "";
+    preferredCookie.value = "";
   });
 
   it("keeps file hand-off, workstation, and kiosk entry discoverable when the browser kiosk is enabled", async () => {
@@ -159,6 +166,15 @@ describe("home page", () => {
       scanCta: "QR 코드 찍기",
       lostCta: "화면을 못 찾겠어요",
     });
+  });
+
+  it("keeps an explicit language choice on the landing page despite the browser preference", async () => {
+    acceptLanguage.value = "en-US,en;q=0.9";
+    preferredCookie.value = "print-cess-locale=vi";
+    const copy = textOf(await HomePage());
+    expect(copy).not.toContain("Here to print?");
+    expect(copy).not.toContain("프린터 옆 화면의 QR 코드를 찍으세요");
+    expect(copy).toContain("Print-cess");
   });
 
   it("falls back to English when no language is asked for", async () => {

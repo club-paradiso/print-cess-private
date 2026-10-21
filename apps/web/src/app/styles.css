@@ -37,18 +37,61 @@ p {
 .home-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   padding-block: 4px;
+}
+.home-language-picker {
+  margin-inline-start: auto;
+}
+.home-language-picker select:focus-visible {
+  outline: 2px solid var(--pc-focus-ring);
+  outline-offset: 3px;
 }
 /* The full lockup is wider than the smallest phones. There the endorsement
    stacks under the name, exactly as the compact header lockup does. */
+/* Keep the language control on the same row at 320px: a second row
+   pushes the primary QR scanning action below the fold on small phones. */
 @media (max-width: 400px) {
+  .home-header {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .home-header .pc-wordmark {
+    min-width: 0;
+    gap: 6px;
+  }
+  .home-header .pc-wordmark .pc-mark {
+    width: 28px;
+    height: 28px;
+  }
+  .home-header .pc-wordmark strong {
+    font-size: 21px;
+  }
+  .home-language-picker {
+    flex: 0 0 auto;
+  }
+  .home-language-picker .drop-language {
+    min-height: 40px;
+    padding: 6px;
+    gap: 4px;
+  }
+  .home-language-picker .drop-language svg {
+    width: 16px;
+    height: 16px;
+  }
+  .home-language-picker select {
+    max-width: 112px;
+    font-size: 13px;
+  }
   .home-header .pc-wordmark > span {
     flex-direction: column;
     align-items: flex-start;
     gap: 3px;
   }
   .home-header .pc-wordmark small {
-    font-size: 13px;
+    font-size: 11px;
   }
 }
 

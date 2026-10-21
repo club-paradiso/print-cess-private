@@ -3,6 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const { notFound } = vi.hoisted(() => ({ notFound: vi.fn() }));
 
 vi.mock("next/navigation", () => ({ notFound }));
+vi.mock("next/headers", () => ({
+  headers: () => Promise.resolve(new Headers({ "accept-language": "ko-KR,ko;q=0.9" })),
+}));
 vi.mock("@/components/kiosk/kiosk-simulator", () => ({
   KioskSimulator: ({ automaticPrinting }: { automaticPrinting?: boolean }) => (
     <div data-testid="kiosk-simulator" data-automatic-printing={automaticPrinting} />

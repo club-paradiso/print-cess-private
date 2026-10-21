@@ -11,6 +11,7 @@ import {
   generateToken,
   hashToken,
 } from "@print-cess/crypto";
+import type { SupportedLocale } from "@print-cess/i18n";
 import {
   MAX_PRINT_BUNDLE_FILES,
   parsePrintBundle,
@@ -39,6 +40,7 @@ import {
   type PrintArtifact,
 } from "@/lib/kiosk-print";
 import { QR_COLORS } from "@/lib/qr-style";
+import { useVisitorLocale } from "@/lib/use-visitor-locale";
 
 type RegisteredSession = {
   sessionId: string;
@@ -98,12 +100,15 @@ export function BatchKioskSimulator({
   automaticPrinting = false,
   sound = true,
   services = false,
+  initialLocale = "ko",
 }: {
   automaticPrinting?: boolean;
   sound?: boolean;
   /** Show links to the other features (the main page only). */
   services?: boolean;
+  initialLocale?: SupportedLocale;
 }) {
+  const [locale, setLocale] = useVisitorLocale(initialLocale, initialLocale);
   const [session, setSession] = useState<RegisteredSession>();
   const [status, setStatus] = useState<KioskStatus>("preparing");
   const [remaining, setRemaining] = useState(120);
@@ -245,12 +250,23 @@ export function BatchKioskSimulator({
         artifacts={artifacts}
         automaticPrinting={automaticPrinting}
         remaining={completionRemaining}
+        locale={locale}
+        onLocaleChange={setLocale}
       />
     );
   }
-  if (status === "failed") return <UnavailableScreen onReset={reset} />;
+  if (status === "failed") {
+    return <UnavailableScreen onReset={reset} locale={locale} onLocaleChange={setLocale} />;
+  }
   if (status !== "preparing" && status !== "waiting") {
-    return <ConnectedScreen status={status} remaining={remaining} />;
+    return (
+      <ConnectedScreen
+        status={status}
+        remaining={remaining}
+        locale={locale}
+        onLocaleChange={setLocale}
+      />
+    );
   }
 
   return (
@@ -261,6 +277,8 @@ export function BatchKioskSimulator({
       lifetime={sessionLifetime}
       maxFiles={MAX_PRINT_BUNDLE_FILES}
       services={services}
+      locale={locale}
+      onLocaleChange={setLocale}
     />
   );
 }

@@ -7,6 +7,10 @@ vi.mock("@/components/kiosk/batch-kiosk-simulator", () => ({
   BatchKioskSimulator: () => null,
 }));
 
+vi.mock("next/headers", () => ({
+  headers: () => Promise.resolve(new Headers({ "accept-language": "ko-KR,ko;q=0.9" })),
+}));
+
 import RootPage from "./page";
 
 describe("root page", () => {
@@ -25,7 +29,12 @@ describe("root page", () => {
     });
 
     expect(redirect).not.toHaveBeenCalled();
-    expect(page.props).toEqual({ automaticPrinting: true, sound: false, services: true });
+    expect(page.props).toEqual({
+      automaticPrinting: true,
+      sound: false,
+      services: true,
+      initialLocale: "ko",
+    });
   });
 
   it("sends visitors to the guide when the browser kiosk is switched off", async () => {

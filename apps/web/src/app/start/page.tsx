@@ -17,6 +17,7 @@ import { translate } from "@print-cess/i18n";
 import { Beacon, RouteGlyph, Wordmark } from "@print-cess/ui";
 
 import { PrintEntryActions, type PrintEntryLabels } from "@/components/home/print-entry-actions";
+import { HomeLanguagePicker } from "@/components/home/home-language-picker";
 import { sessionOriginFrom } from "@/lib/print-qr";
 import { requestLocale } from "@/lib/request-locale";
 import { isBrowserKioskEnabled } from "@/server/demo";
@@ -66,6 +67,7 @@ export default async function HomePage() {
     <main className="home">
       <header className="home-header">
         <Wordmark />
+        <HomeLanguagePicker locale={locale} />
       </header>
 
       {/* Print comes first and takes most of the first screen. A visitor who

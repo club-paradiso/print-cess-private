@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 import { isRightToLeft, matchLocale, translate, type SupportedLocale } from "@print-cess/i18n";
 
+import { preferredLocaleFromCookie, savePreferredLocale } from "./locale-preference";
+
 export type Text = (key: string, values?: Record<string, string | number>) => string;
 
 export function useVisitorLocale(
@@ -13,7 +15,10 @@ export function useVisitorLocale(
   const detected = useSyncExternalStore(subscribeNever, readBrowserLocale, () => initialLocale);
   const [chosen, setChosen] = useState<SupportedLocale | undefined>(carriedLocale);
   const locale = chosen ?? detected;
-  const setLocale = useCallback((next: SupportedLocale) => setChosen(next), []);
+  const setLocale = useCallback((next: SupportedLocale) => {
+    setChosen(next);
+    savePreferredLocale(next);
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -29,5 +34,5 @@ function subscribeNever(): () => void {
 }
 
 function readBrowserLocale(): SupportedLocale {
-  return matchLocale(navigator.languages);
+  return preferredLocaleFromCookie(document.cookie) ?? matchLocale(navigator.languages);
 }

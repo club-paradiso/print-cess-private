@@ -30,6 +30,15 @@
 .kiosk-header > .pc-wordmark {
   margin: 0;
 }
+.kiosk-header > .drop-language {
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+.kiosk-header select:focus-visible,
+.kiosk-result__topbar select:focus-visible {
+  outline: 3px solid var(--pc-focus-ring);
+  outline-offset: 3px;
+}
 .kiosk-header > .pc-wordmark svg,
 .kiosk-result > .pc-wordmark svg {
   width: clamp(40px, 4.6vh, 52px);
@@ -155,6 +164,14 @@
 .kiosk-title > span {
   display: block;
   white-space: nowrap;
+}
+.kiosk-title--translated {
+  font-size: clamp(29px, 3.4vw, 66px);
+  letter-spacing: -0.03em;
+}
+.kiosk-title--translated > span {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .kiosk-title em {
   color: var(--pc-brand);
@@ -686,9 +703,28 @@
   background: var(--pc-background);
   text-align: center;
 }
-.kiosk-result > .pc-wordmark {
+.kiosk-result__topbar {
   position: absolute;
-  inset: clamp(24px, 2.6vw, 48px) auto auto clamp(24px, 2.6vw, 48px);
+  inset: clamp(24px, 2.6vw, 48px) clamp(24px, 2.6vw, 48px) auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: auto;
+}
+.kiosk-result__topbar .pc-wordmark {
+  margin: 0;
+}
+.kiosk-result__topbar .pc-wordmark svg {
+  width: clamp(40px, 4.6vh, 52px);
+  height: clamp(40px, 4.6vh, 52px);
+}
+.kiosk-result__topbar .pc-wordmark strong {
+  font-size: clamp(30px, 4vh, 46px);
+}
+.kiosk-result__topbar .pc-wordmark small {
+  font-size: clamp(15px, 2vh, 22px);
 }
 .kiosk-result > svg {
   width: clamp(96px, 13vh, 144px);
