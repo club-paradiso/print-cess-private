@@ -196,6 +196,12 @@ export function downloadTarget(size: number, capabilities = saveCapabilities()):
       const name = safeFileName(entry.name);
       const type = safeMediaType(entry.type);
       const staged = capabilities.canStage ? await openStagedSink(name, type) : null;
+      // Feature detection is not permission: managed browsers may expose OPFS
+      // while denying access when we actually open it. Never route a large file
+      // into heap buffering after that failure.
+      if (!staged && size > MEMORY_SAVE_LIMIT_BYTES) {
+        throw new SaveError("dropTooLargeForBrowser");
+      }
       return staged ?? memorySink(name, type);
     },
   };
