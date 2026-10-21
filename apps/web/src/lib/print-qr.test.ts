@@ -60,8 +60,6 @@ describe("print QR validation", () => {
   });
 
   it("accepts a code naming the deployment's configured origin and stays on this one", () => {
-    // Production: the kiosk draws codes for PUBLIC_BASE_URL, and the visitor's
-    // page may be on the host that the other one redirects to.
     const configured = "https://paradiso-print-cess-web.vercel.app";
     const fromKiosk = `${configured}/s/${SESSION_ID}${FRAGMENT}`;
 
