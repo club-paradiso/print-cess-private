@@ -98,7 +98,9 @@ test("hands a file from one phone to another and back to disk", async ({ browser
   }
 });
 
-test("defaults to permission-free downloads on a desktop receiver with file pickers", async ({ browser }) => {
+test("defaults to permission-free downloads on a desktop receiver with file pickers", async ({
+  browser,
+}) => {
   const sender = await browser.newContext();
   const receiver = await browser.newContext({ acceptDownloads: true });
   await receiver.addInitScript(() => {
