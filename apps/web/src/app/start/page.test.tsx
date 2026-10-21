@@ -8,7 +8,6 @@ vi.mock("next/headers", () => ({
 
 import HomePage from "./page";
 
-/** Walks the rendered tree collecting every string, so copy can be asserted. */
 function textOf(node: unknown): string {
   if (typeof node === "string") return node;
   if (Array.isArray(node)) return node.map(textOf).join("");
@@ -29,7 +28,6 @@ function headingsOf(node: unknown, level: string): string[] {
   return [];
 }
 
-/** The scan sheet's extra trusted origin, read from the client component's props. */
 function sessionOriginOf(node: unknown): unknown {
   if (Array.isArray(node)) return node.map(sessionOriginOf).find((value) => value !== undefined);
   if (node && typeof node === "object" && "props" in node) {
@@ -44,7 +42,6 @@ function sessionOriginOf(node: unknown): unknown {
   return undefined;
 }
 
-/** The client component takes its words as props, so read them from there. */
 function entryLabelsOf(node: unknown): Record<string, unknown> | undefined {
   if (Array.isArray(node)) return node.map(entryLabelsOf).find((labels) => labels !== undefined);
   if (node && typeof node === "object" && "props" in node) {
@@ -157,8 +154,6 @@ describe("home page", () => {
     expect(copy).toContain("업무용 PC");
     expect(copy).toContain("이 기기를 Print-cess 화면으로 쓰기");
     expect(copy).not.toContain("Here to print?");
-    // The category word is for installers; a first-time visitor is never asked
-    // to know it.
     expect(copy).not.toContain("키오스크");
     expect(entryLabelsOf(await HomePage())).toMatchObject({
       scanCta: "QR 코드 찍기",
@@ -179,12 +174,6 @@ describe("home page", () => {
     expect(copy).not.toContain("kiosk");
   });
 
-  /**
-   * The page is read top to bottom by a visitor standing in a queue: print
-   * first, then the other tools, and only then the entrances for the people
-   * who run the service (turning this device into the print screen, managed
-   * workstations).
-   */
   it("keeps the setup entrances below every visitor tool", async () => {
     const page = await HomePage();
     const order = hrefsOf(page);
@@ -234,8 +223,6 @@ describe("home page", () => {
   it("never offers a print button that has nowhere honest to go", async () => {
     const hrefs = hrefsOf(await HomePage());
 
-    // Printing starts at a kiosk's QR code. The home page describes that; it
-    // does not link to a print route it cannot open.
     expect(hrefs.some((href) => href.startsWith("/s/"))).toBe(false);
     expect(hrefs).not.toContain("/print");
   });

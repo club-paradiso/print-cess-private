@@ -12,7 +12,5 @@ export default async function MobileSessionPage({
 }) {
   const { sessionId } = await params;
   if (!SESSION_ID_PATTERN.test(sessionId)) notFound();
-  // The first paint is already in the visitor's language, so nobody watches
-  // the page load in English and then change under them.
   return <BatchMobileFlow sessionId={sessionId} initialLocale={await requestLocale()} />;
 }

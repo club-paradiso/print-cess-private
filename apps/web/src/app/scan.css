@@ -1,4 +1,3 @@
-/* The scanner sits under the shared header's "Scan" label, like Share. */
 .app-section + .scan-composer,
 .app-section + .scan-result {
   margin-top: 18px;
@@ -216,9 +215,6 @@
   display: grid;
   gap: 10px;
 }
-/* Sending on is the expected next step. Keeping the PDF, handing it to another
-   app, and printing from this device are quieter alternatives: one list of
-   rows, like a share sheet, rather than a stack of competing buttons. */
 .scan-more-actions {
   display: grid;
   overflow: hidden;
@@ -542,7 +538,6 @@
   padding-inline: 12px;
 }
 
-/* --- Scanner lab (development only) ---------------------------------------- */
 
 .scan-lab {
   width: min(100% - 32px, 1200px);
@@ -624,10 +619,6 @@
   color: var(--pc-text-muted);
 }
 
-/* --- 2026-10-13 pass ---------------------------------------------------------
-   The page tools were five 33 px-wide buttons under a half-width card; every
-   one is now at least 44 px in both directions. The two other ways in sit
-   side by side under the smart camera instead of as two more full buttons. */
 
 .scan-page-actions {
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -645,8 +636,6 @@
   background: var(--pc-surface-brand-subtle);
 }
 
-/* Before the first page: one primary way in, two quieter ones beside each
-   other. */
 .scan-primary-actions:not(.scan-primary-actions--more) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

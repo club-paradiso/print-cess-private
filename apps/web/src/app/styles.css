@@ -8,12 +8,6 @@ p {
   margin-top: 0;
 }
 
-/* --- Service entry ---------------------------------------------------------
-   The one screen nobody reaches by scanning something. It says what the
-   service is, how printing starts (at the big screen, not here), and what a
-   phone can do on its own. Printing has no button here on purpose: it begins
-   with the kiosk's QR code, and a button that pretended otherwise would lead
-   nowhere. */
 
 .status-page {
   display: grid;
@@ -39,8 +33,6 @@ p {
   align-items: center;
   padding-block: 4px;
 }
-/* The full lockup is wider than the smallest phones. There the endorsement
-   stacks under the name, exactly as the compact header lockup does. */
 @media (max-width: 400px) {
   .home-header .pc-wordmark > span {
     flex-direction: column;
@@ -52,12 +44,6 @@ p {
   }
 }
 
-/* --- Home -----------------------------------------------------------------
-   One job per band, in the order a visitor needs them: find the screen and
-   scan it, see the three steps, then the other tools, what happens to a file,
-   and last the entrances for the people who run the service. The three steps
-   are one strip of paper with perforations between them; the same strip
-   appears on the phone and the big screen. */
 
 .home {
   display: grid;
@@ -117,9 +103,6 @@ p {
 .print-entry__actions .pc-button {
   min-width: 0;
 }
-/* On a 320-375 px phone with Safari's toolbars showing (about 548 px tall),
-   the scan button has to clear the fold. The e2e "small phone in Korean"
-   test holds this to the pixel. */
 @media (max-width: 380px) {
   .home {
     gap: 28px;
@@ -129,8 +112,6 @@ p {
   }
 }
 
-/* The Beacon on a drawn screen, with its instruction. Matching this tile to
-   the shared display is the whole job of this block. */
 .print-entry__beacon {
   display: grid;
   grid-template-columns: minmax(0, 150px) minmax(0, 1fr);
@@ -276,7 +257,6 @@ p {
 .home-step:first-child {
   background: var(--pc-surface-brand-subtle);
 }
-/* The perforation between steps. */
 .home-step + .home-step {
   border-top: 2px dashed var(--pc-indigo-200);
 }
@@ -350,8 +330,6 @@ p {
   border-start-end-radius: 0;
   background: var(--pc-surface);
 }
-/* The turned-down corner: the page's own background cut out of the sheet, and
-   the fold itself in lilac. Two flat triangles, no gradient. */
 .home-sheet::before,
 .home-sheet::after {
   content: "";
@@ -407,7 +385,6 @@ p {
   padding-top: 12px;
 }
 
-/* A link that looks like the button it is. */
 .home-cta {
   text-decoration: none;
 }
@@ -433,8 +410,6 @@ p {
   text-underline-offset: 4px;
 }
 
-/* What holds for every tool on the page, on the one dark band. Mint is a
-   fill here, never the colour of text. */
 .home-trust {
   display: grid;
   gap: 18px;
@@ -531,10 +506,6 @@ p {
   }
 }
 
-/* --- Phone header ---------------------------------------------------------
-   The wordmark and the help control share one row only while both fit. "Need
-   help?" is far longer in some of the thirteen languages, and the service name
-   is long too, so neither may force the page wider than the phone screen. */
 
 .mobile-topbar {
   display: flex;
@@ -547,8 +518,6 @@ p {
 .mobile-topbar .pc-wordmark {
   min-width: 0;
 }
-/* A step that follows the header directly (no step indicator between them)
-   still needs air above its heading. */
 .mobile-topbar + .mobile-step {
   padding-top: 22px;
 }
@@ -580,7 +549,6 @@ p {
   color: var(--pc-brand);
 }
 
-/* --- A step ---------------------------------------------------------------- */
 
 .mobile-step {
   display: grid;
@@ -590,7 +558,6 @@ p {
 }
 .mobile-step h1 {
   margin: 0;
-  /* No single word stranded on a heading's last line. */
   text-wrap: balance;
   color: var(--pc-text-primary);
   font-size: var(--pc-text-title);
@@ -612,8 +579,6 @@ p {
 .mobile-step--single .pc-button {
   margin-top: 12px;
 }
-/* The end of the visit. Nothing here is actionable, so it fills the screen and
-   reads quieter than a step that still wants something from the visitor. */
 .mobile-step--closed {
   min-height: 72vh;
   justify-items: center;
@@ -632,14 +597,11 @@ p {
   font-size: 15px;
   line-height: 1.4;
 }
-/* Changing the selection is the quiet way back, centred under the one
-   forward action, and still a comfortable thumb target. */
 .mobile-change-selection {
   justify-self: center;
   min-height: 48px;
 }
 
-/* --- Choosing a document ------------------------------------------------- */
 
 .mobile-file-error,
 .mobile-file-notice {
@@ -664,8 +626,6 @@ p {
   background: var(--pc-surface);
 }
 
-/* The guide is one tap away from the screen that needs it, rather than standing
-   in front of it. */
 .mobile-guide-link {
   justify-self: center;
   min-height: 44px;
@@ -681,7 +641,6 @@ p {
   cursor: pointer;
 }
 
-/* --- Help sheet ------------------------------------------------------------ */
 
 .mobile-help {
   width: min(100%, 560px);
@@ -826,9 +785,6 @@ p {
   margin-top: 20px;
 }
 
-/* --- Preview --------------------------------------------------------------
-   The preview is the confirmation that the right page is about to be printed,
-   so it sits on a neutral desk with the sheet itself in white. */
 
 .mobile-preview {
   display: grid;
@@ -882,7 +838,6 @@ p {
   color: var(--pc-text-muted);
 }
 
-/* What is about to be printed, in words: which file, and how. */
 .mobile-selected {
   margin: 0;
   padding: 12px 14px;
@@ -890,7 +845,6 @@ p {
   border-radius: var(--pc-radius-md);
   background: var(--pc-surface);
 }
-/* Several files print in this order, so the order is written down. */
 ol.mobile-selected {
   padding-block: 4px;
   counter-reset: pc-print-order;
@@ -953,7 +907,6 @@ ol.mobile-selected li::before {
   color: var(--pc-success);
 }
 
-/* --- Waiting -------------------------------------------------------------- */
 
 .mobile-reminder {
   margin: -6px 0 16px;
@@ -994,17 +947,12 @@ ol.mobile-selected li::before {
   border: 0 !important;
 }
 
-/* The language picker and Help sit together in the header, so neither costs the
-   visitor a screen before they can choose a document. */
 .mobile-topbar__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
-/* On a phone the header is two rows at most: the wordmark and Help, then the
-   language picker. The container steps aside so its controls wrap as siblings
-   of the wordmark instead of as one block that always falls to a new row. */
 @media (max-width: 560px) {
   .mobile-topbar__actions {
     display: contents;
@@ -1014,11 +962,6 @@ ol.mobile-selected li::before {
   }
 }
 
-/* --- Print entry sheets ----------------------------------------------------
-   "Scan the QR code" and "I can't find the screen" open as sheets over the
-   home page: anchored to the bottom edge on a phone, where a thumb reaches, and
-   centred on anything wider. Native <dialog>, so focus is trapped, Escape
-   closes, and the page behind cannot be tabbed into. */
 
 .print-sheet {
   width: 100%;
@@ -1103,7 +1046,6 @@ ol.mobile-selected li::before {
   font-weight: 700;
 }
 
-/* The three things to do, drawn in the order they happen. */
 .print-find {
   display: grid;
   gap: 10px;
@@ -1195,9 +1137,7 @@ ol.mobile-selected li::before {
   pointer-events: none;
 }
 
-/* --- Phone print flow polish ---------------------------------------------- */
 
-/* Time left while choosing. Quiet until the last half minute. */
 .mobile-time-left {
   display: inline-flex;
   align-items: center;
@@ -1221,7 +1161,6 @@ ol.mobile-selected li::before {
   color: var(--pc-warning) !important;
 }
 
-/* The preview's actions stay on screen however tall the preview is. */
 .mobile-actions {
   position: sticky;
   bottom: 0;
@@ -1240,7 +1179,6 @@ ol.mobile-selected li::before {
   max-height: calc(40vh - 24px);
 }
 
-/* Waiting screens read centred, with the stages under the sentence. */
 .mobile-step--progress {
   justify-items: center;
   text-align: center;

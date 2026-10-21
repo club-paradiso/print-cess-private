@@ -21,11 +21,6 @@ import { sessionOriginFrom } from "@/lib/print-qr";
 import { requestLocale } from "@/lib/request-locale";
 import { isBrowserKioskEnabled } from "@/server/demo";
 
-/**
- * The product name is one word. Without this, a narrow screen breaks it at its
- * hyphen and leaves "Print-" at the end of one line and "cess" at the start of
- * the next.
- */
 function keepNameTogether(sentence: string): ReactNode {
   const parts = sentence.split("Print-cess");
   return parts.flatMap((part, index) =>
@@ -41,15 +36,8 @@ function keepNameTogether(sentence: string): ReactNode {
 }
 
 export default async function HomePage() {
-  // The root URL is the shared display (app/page.tsx). This page is the
-  // visitor's guide: where somebody who did not scan anything lands from the
-  // header, a 404 or the campaign page, and it is built for finding the screen.
   const locale = await requestLocale();
   const text = (key: string) => translate(locale, key);
-  // Same decision as /kiosk and its session API (server/demo.ts): on in Vercel
-  // Production unless ENABLE_BROWSER_KIOSK is exactly "false", the kill switch;
-  // closed in any other production build unless enabled. Do not advertise a
-  // shortcut to a route that will return 404.
   const kioskAvailable = process.env.NODE_ENV !== "production" || isBrowserKioskEnabled();
 
   const labels: PrintEntryLabels = {
