@@ -98,6 +98,61 @@ test("hands a file from one phone to another and back to disk", async ({ browser
   }
 });
 
+test("defaults to permission-free downloads on a desktop receiver with file pickers", async ({
+  browser,
+}) => {
+  const sender = await browser.newContext();
+  const receiver = await browser.newContext({ acceptDownloads: true });
+  await receiver.addInitScript(() => {
+    const calls: string[] = [];
+    Object.defineProperty(window, "__printCessPickerCalls", { value: calls });
+    for (const name of ["showSaveFilePicker", "showDirectoryPicker"]) {
+      Object.defineProperty(window, name, {
+        configurable: true,
+        value: () => {
+          calls.push(name);
+          throw new Error(`Unexpected file-system picker: ${name}`);
+        },
+      });
+    }
+  });
+
+  try {
+    const sending = await sender.newPage();
+    await sending.goto("/send");
+    await sending.setInputFiles('[data-testid="drop-file-input"]', [
+      { name: "first.txt", mimeType: "text/plain", buffer: Buffer.from("first") },
+      { name: "second.txt", mimeType: "text/plain", buffer: Buffer.from("second") },
+    ]);
+    await sending.getByRole("button", { name: /Send these files|이 파일 보내기/u }).click();
+
+    const receiving = await receiver.newPage();
+    await receiving.goto("/receive");
+    await handOver(sending, receiving);
+    await expect(receiving.getByText("second.txt")).toBeVisible({ timeout: 60_000 });
+
+    const firstDownload = receiving.waitForEvent("download", { timeout: 120_000 });
+    await receiving
+      .locator(".drop-file-list--actions > li")
+      .first()
+      .getByRole("button", { name: /^Save$|^저장하기$/u })
+      .click();
+    expect((await firstDownload).suggestedFilename()).toBe("first.txt");
+
+    const secondDownload = receiving.waitForEvent("download", { timeout: 120_000 });
+    await receiving.locator(".drop-receive-files .mobile-actions > button").first().click();
+    expect((await secondDownload).suggestedFilename()).toBe("second.txt");
+
+    const pickerCalls = await receiving.evaluate(
+      () => (window as unknown as { __printCessPickerCalls: string[] }).__printCessPickerCalls,
+    );
+    expect(pickerCalls).toEqual([]);
+  } finally {
+    await sender.close();
+    await receiver.close();
+  }
+});
+
 test("saves one of several files without fetching the rest", async ({ browser }) => {
   const sender = await browser.newContext();
   const receiver = await browser.newContext({ acceptDownloads: true });

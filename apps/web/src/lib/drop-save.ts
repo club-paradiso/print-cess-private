@@ -122,16 +122,17 @@ export type SaveTarget = {
 };
 
 /**
- * Opens the best destination this browser offers for a single file. Must be
- * called synchronously from the handler for the tap that requested the save.
+ * The default is a regular browser download, including on desktop Chromium.
+ * A writable file picker exposes stronger file-system permissions and triggers
+ * Chromium's "this site can see edits" warning. Only explicit opt-in flows may
+ * request that picker, synchronously from the user's click handler.
  */
-export async function pickSaveTarget(file: {
-  name: string;
-  type: string;
-  size: number;
-}): Promise<SaveTarget> {
+export async function pickSaveTarget(
+  file: { name: string; type: string; size: number },
+  options: { preferFilePicker?: boolean } = {},
+): Promise<SaveTarget> {
   const capabilities = saveCapabilities();
-  if (capabilities.canPickFile) {
+  if (options.preferFilePicker && capabilities.canPickFile) {
     const picked = await openFilePicker(file);
     if (picked) return picked;
   }
@@ -195,6 +196,12 @@ export function downloadTarget(size: number, capabilities = saveCapabilities()):
       const name = safeFileName(entry.name);
       const type = safeMediaType(entry.type);
       const staged = capabilities.canStage ? await openStagedSink(name, type) : null;
+      // Feature detection is not permission: managed browsers may expose OPFS
+      // while denying access when we actually open it. Never route a large file
+      // into heap buffering after that failure.
+      if (!staged && size > MEMORY_SAVE_LIMIT_BYTES) {
+        throw new SaveError("dropTooLargeForBrowser");
+      }
       return staged ?? memorySink(name, type);
     },
   };

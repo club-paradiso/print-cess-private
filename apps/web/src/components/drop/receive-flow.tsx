@@ -285,9 +285,9 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
       setNoticeKey(undefined);
       let target: SaveTarget;
       try {
-        // Opened inside the tap. By the time a large file finishes arriving the
-        // user activation that would have allowed a picker is long gone, so a
-        // destination asked for later never opens at all.
+        // Standard downloads do not grant file-system write access and avoid
+        // Chromium's alarming native "this site can see edits" save dialog.
+        // Explicit folder saves remain available as a separate action below.
         target = await pickSaveTarget(file);
       } catch (error) {
         if (error instanceof SaveError && error.code === "dropSaveCancelled") return;
@@ -311,55 +311,57 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
   );
 
   /**
-   * Saves everything that has not already arrived. On a browser that can offer
-   * a folder, one choice covers the whole transfer; everywhere else each file
-   * takes the ordinary download path, and the ones already saved are not
-   * fetched a second time.
+   * Download remaining files by default. Writing directly into a selected
+   * folder is a separate, explicitly requested action; never silently request
+   * file-system access on the ordinary Save all button.
    */
-  const saveRemaining = useCallback(async () => {
-    if (!drop) return;
-    setNoticeKey(undefined);
-    const outstanding = fileStates
-      .map((state, index) => ({ state, index }))
-      .filter(({ state }) => state.status !== "saved" && state.status !== "shared")
-      .map(({ index }) => index);
-    if (outstanding.length === 0) return;
+  const saveRemaining = useCallback(
+    async (mode: "download" | "folder" = "download") => {
+      if (!drop) return;
+      setNoticeKey(undefined);
+      const outstanding = fileStates
+        .map((state, index) => ({ state, index }))
+        .filter(({ state }) => state.status !== "saved" && state.status !== "shared")
+        .map(({ index }) => index);
+      if (outstanding.length === 0) return;
 
-    let folder: SaveTarget | null = null;
-    if (canPickFolder) {
-      try {
-        folder = await pickDirectoryTarget();
-      } catch (error) {
-        setNoticeKey(dropErrorKey(error));
-        return;
-      }
-      // A dismissed folder dialog is a decision, not a failure to route around.
-      if (!folder) return;
-    }
-
-    const controller = new AbortController();
-    abort.current = controller;
-    const release = await holdScreenAwake();
-    try {
-      for (const index of outstanding) {
-        const file = drop.manifest.files[index];
-        if (!file) continue;
+      let folder: SaveTarget | null = null;
+      if (mode === "folder" && canPickFolder) {
         try {
-          const target = folder ?? downloadTarget(file.size);
-          await runSave(target, index, controller.signal);
+          folder = await pickDirectoryTarget();
         } catch (error) {
-          updateFile(index, { status: "failed", errorKey: dropErrorKey(error) });
-          // One file failing is not the transfer failing. Carry on with the
-          // rest, unless the visitor stopped it themselves.
-          if (controller.signal.aborted) break;
+          setNoticeKey(dropErrorKey(error));
+          return;
         }
+        // A dismissed folder dialog is a decision, not a failure to route around.
+        if (!folder) return;
       }
-      reportIfComplete(drop);
-    } finally {
-      release();
-      abort.current = null;
-    }
-  }, [canPickFolder, drop, fileStates, reportIfComplete, runSave, updateFile]);
+
+      const controller = new AbortController();
+      abort.current = controller;
+      const release = await holdScreenAwake();
+      try {
+        for (const index of outstanding) {
+          const file = drop.manifest.files[index];
+          if (!file) continue;
+          try {
+            const target = folder ?? downloadTarget(file.size);
+            await runSave(target, index, controller.signal);
+          } catch (error) {
+            updateFile(index, { status: "failed", errorKey: dropErrorKey(error) });
+            // One file failing is not the transfer failing. Carry on with the
+            // rest, unless the visitor stopped it themselves.
+            if (controller.signal.aborted) break;
+          }
+        }
+        reportIfComplete(drop);
+      } finally {
+        release();
+        abort.current = null;
+      }
+    },
+    [canPickFolder, drop, fileStates, reportIfComplete, runSave, updateFile],
+  );
 
   const shareOne = useCallback(
     async (index: number) => {
@@ -617,14 +619,10 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
               however long the list is; the way out sits quietly under it. */}
           <div className="mobile-actions">
             {everythingArrived ? null : (
-              <PrimaryButton disabled={busy} onClick={() => void saveRemaining()}>
+              <PrimaryButton disabled={busy} onClick={() => void saveRemaining("download")}>
                 {anyFailed ? (
                   <>
                     <RotateCcw aria-hidden="true" /> {text("dropRetryRemaining")}
-                  </>
-                ) : canPickFolder ? (
-                  <>
-                    <FolderDown aria-hidden="true" /> {text("dropSaveAllToFolder")}
                   </>
                 ) : (
                   <>
@@ -633,6 +631,11 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
                 )}
               </PrimaryButton>
             )}
+            {!everythingArrived && canPickFolder ? (
+              <SecondaryButton disabled={busy} onClick={() => void saveRemaining("folder")}>
+                <FolderDown aria-hidden="true" /> {text("dropSaveAllToFolder")}
+              </SecondaryButton>
+            ) : null}
             {busy ? (
               <SecondaryButton onClick={() => abort.current?.abort()}>
                 {text("dropCancel")}

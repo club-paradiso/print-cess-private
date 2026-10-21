@@ -30,27 +30,27 @@ anything was read or sent.
 
 ## Where Print-cess can and cannot produce it
 
-| Path                                                                                          | Calls `showSaveFilePicker`?  |
-| --------------------------------------------------------------------------------------------- | ---------------------------- |
-| Browser kiosk printing, `apps/web/src/lib/kiosk-print.ts` (`printArtifact`, `printArtifacts`) | No                           |
-| Kiosk completion screen, "파일 다운로드 (직원용)" (`<a download>`)                            | No (ordinary download)       |
-| Scan, "print" (`apps/web/src/components/scan/scanner-flow.tsx`, hidden iframe)                | No                           |
-| Native Windows kiosk (`apps/kiosk`, WPF, `System.Printing`, never opens a dialog)             | No (no Chromium at all)      |
-| Share receive, **"저장하기 / Save"** (`/receive`, `drop-save.ts` `pickSaveTarget`)            | **Yes**, on Chromium desktop |
-| Share receive, "폴더에 모두 저장하기…" (`showDirectoryPicker`)                                | No (different title)         |
+Ordinary file saves do not request file-system permission in these paths:
 
-The repository's only `showSaveFilePicker()` call is `openFilePicker()` in
-`apps/web/src/lib/drop-save.ts`, reached from `saveOne()` in
-`apps/web/src/components/drop/receive-flow.tsx`. It has never been in a print path
-(`git log -S showSaveFilePicker` shows it arriving with the transfer save work only).
-`docs/GOVERNMENT_WORKSTATION.md` describes the workstation flow that uses it: a phone sends a
-document to a work computer through `/receive`, the visitor saves it, and then prints the saved
-file from that computer. The warning there is Chromium's legitimate disclosure for a deliberate
-save; Print-cess writes the chosen file once and keeps no handle afterwards.
+- Browser kiosk printing, staff downloads, and Scan printing.
+- Native Windows kiosk printing, which does not use Chromium.
+- `/receive` single-file Save and default Save all: ordinary browser downloads.
 
-Decision (2026-10-12): `/receive` keeps `showSaveFilePicker()` and accepts the warning. Replacing it
-with an ordinary download would remove the warning but also the confirmed "Saved" outcome and the
-visitor's choice of location, which `drop-save.ts` exists to provide.
+The separately selected `/receive` "Save all to folder" action does call
+`showDirectoryPicker()`, which uses a different browser permission title.
+
+The only `showSaveFilePicker()` call is `openFilePicker()` in
+`apps/web/src/lib/drop-save.ts`. As of 2026-10-21, it is gated behind an explicit
+`preferFilePicker: true` option and is **not invoked by the normal receive UI**.
+`saveOne()` and the default `saveRemaining("download")` use regular downloads.
+The explicitly selected `saveRemaining("folder")` uses `showDirectoryPicker()`,
+which presents a different browser permission dialog.
+
+Decision (2026-10-21, superseding the 2026-10-12 UI default): the desktop receive
+flow must not grant direct file-write permission merely to download a document.
+Browser download settings control where the file lands. The UI correctly reports
+"Download started" rather than claiming a confirmed disk write. An agency's
+managed download restrictions remain in force; this change never bypasses them.
 
 Outside Print-cess code, two Chromium-side callers exist and cannot be excluded remotely:
 
@@ -65,6 +65,10 @@ Outside Print-cess code, two Chromium-side callers exist and cannot be excluded 
   `showSaveFilePicker`, `showDirectoryPicker` or `showOpenFilePicker`.
 - `apps/web/test/e2e/print-flow.spec.ts` ("one kiosk scan prints multiple…") records every picker
   call in real Chromium while a PNG and a PDF go through the kiosk and fails on any call.
+- `apps/web/src/lib/drop-save.test.ts` asserts that the normal save target never
+  opens a Chromium file picker, even when the browser supports it.
+- `apps/web/test/e2e/drop-flow.spec.ts` checks that default single and bulk
+  downloads never request file-system picker permission on a receiver.
 
 ## When it is reported again
 

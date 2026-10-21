@@ -24,7 +24,7 @@ It also performs two network checks:
 - the Print-cess API answers from this network (required — a proxy or allowlist that blocks the origin is reported here instead of failing mid-transfer);
 - the deployment offers the same-origin storage route described below (advisory).
 
-Normal browser download support is also checked. If richer save APIs are unavailable, the receive flow can fall back to an ordinary browser download where the browser and agency policy permit it.
+Normal browser download support is also checked. Ordinary browser downloads are the default receive path, even when richer file-system APIs are available; the user may explicitly opt into direct folder writes. The browser and agency download policies still apply.
 
 ## Browser baseline
 

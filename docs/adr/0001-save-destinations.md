@@ -98,3 +98,17 @@ compression dependency, assembles the whole transfer somewhere before it can be
 downloaded, and takes away the ability to save one file out of five — which is
 the thing people actually want. The folder picker solves the same problem better
 on the browsers that have it.
+
+## UI policy update (2026-10-21)
+
+The original destination semantics and the direct-write implementation remain valid,
+but `/receive` now **defaults to regular downloads** for both single-file and
+bulk actions. Chromium's `showSaveFilePicker()` causes a browser security
+warning about the site's ability to see edits, which confused users on managed
+agency computers. The picker remains available to callers that explicitly opt
+in with `preferFilePicker: true`, but no longer runs as a side effect of the
+normal Save button. Direct folder writes are a separate optional button.
+
+The outcome contract is unchanged: a browser download means `downloadStarted`,
+not `saved`. Security/DLP restrictions are not bypassed. This update supersedes
+the old default choice, not the file-integrity or reporting guarantees.
