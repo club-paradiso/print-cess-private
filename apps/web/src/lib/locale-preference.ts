@@ -3,7 +3,9 @@ import { SUPPORTED_LOCALES, type SupportedLocale } from "@print-cess/i18n";
 /** A language explicitly selected by this browser, shared across Print, Share and Scan. */
 export const VISITOR_LOCALE_COOKIE = "print-cess-locale";
 
-export function preferredLocaleFromCookie(header: string | null | undefined): SupportedLocale | undefined {
+export function preferredLocaleFromCookie(
+  header: string | null | undefined,
+): SupportedLocale | undefined {
   const value = header
     ?.split(";")
     .map((part) => part.trim())
