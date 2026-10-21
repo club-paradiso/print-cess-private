@@ -99,7 +99,6 @@ downloaded, and takes away the ability to save one file out of five — which is
 the thing people actually want. The folder picker solves the same problem better
 on the browsers that have it.
 
-
 ## UI policy update (2026-10-21)
 
 The original destination semantics and the direct-write implementation remain valid,
