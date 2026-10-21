@@ -1,13 +1,3 @@
-/* The shared display. It is read from a step or two away by somebody who has
-   never seen it before, in a room full of strangers, so it has one job per
-   state: the QR code while waiting, the stage while working, the paper when
-   done.
-
-   The waiting screen reads left to right in the order things happen: where
-   you are ("Start printing here"), the one instruction, the whole visit in
-   three steps, then the code itself on an indigo panel that is the brightest
-   thing in the room. Everything is solid colour; the brand shows in the mark,
-   the panel, and the scan frame around the code. */
 
 .kiosk-shell {
   box-sizing: border-box;
@@ -17,7 +7,6 @@
   color: var(--pc-text-primary);
 }
 
-/* --- Header ------------------------------------------------------------------ */
 
 .kiosk-header {
   display: flex;
@@ -44,8 +33,6 @@
   font-size: clamp(15px, 2vh, 22px);
 }
 
-/* A quiet "this screen is working" signal. It replaces the old green banner,
-   which shouted a fact ("available") that the QR code already proves. */
 .kiosk-availability {
   display: inline-flex;
   align-items: center;
@@ -66,8 +53,6 @@
   background: var(--pc-border-strong);
 }
 
-/* The main page's links to the other features. Plain chips in the header, so
-   they are easy to find without competing with the QR code for attention. */
 .kiosk-services ul {
   display: flex;
   flex-wrap: wrap;
@@ -119,7 +104,6 @@
   font-size: 12px;
 }
 
-/* --- Waiting: the words ------------------------------------------------------ */
 
 .kiosk-layout {
   display: grid;
@@ -167,9 +151,6 @@
   font-weight: 560;
 }
 
-/* The rotating instruction for the languages that are not permanently on
-   screen. A fixed height keeps a longer language from shifting the layout
-   every few seconds. */
 .kiosk-spotlight {
   display: flex;
   flex-wrap: wrap;
@@ -189,8 +170,6 @@
   font-weight: 750;
 }
 
-/* The whole visit, top to bottom. The first step is the one that happens at
-   this screen, so it is the only one drawn as current. */
 .kiosk-steps {
   display: grid;
   gap: clamp(8px, 1.2vh, 14px);
@@ -257,12 +236,7 @@
   color: var(--pc-text-muted);
 }
 
-/* --- Waiting: the code --------------------------------------------------------- */
 
-/* The code lives on a solid indigo panel: the one large block of colour on the
-   screen, so it is what a visitor's eye lands on from across the room. The
-   code itself stays pure ink on white with a quiet zone, which is what a phone
-   camera needs, and it never moves. */
 .kiosk-qr {
   --kiosk-qr-size: min(100%, calc(100vh - 420px), 600px);
   display: grid;
@@ -340,7 +314,6 @@
   }
 }
 
-/* The time left as an emptying bar as well as a number. */
 .kiosk-qr__timer {
   display: grid;
   gap: 8px;
@@ -378,7 +351,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --- Waiting: the small print -------------------------------------------------- */
 
 .kiosk-footer {
   display: flex;
@@ -415,11 +387,6 @@
   color: var(--pc-text-muted);
 }
 
-/* On a landscape display the waiting screen is exactly one screen tall and
-   never scrolls: the code takes whatever height the words around it leave, up
-   to its full size. Below 700px of height (1024x600 panels) the words alone
-   outgrow the screen, so those keep the scrolling layout rather than clipping
-   instructions. */
 @media (min-width: 961px) and (min-height: 700px) and (min-aspect-ratio: 1/1) {
   .kiosk-shell--waiting {
     display: grid;
@@ -439,8 +406,6 @@
     height: 100%;
     min-height: 0;
   }
-  /* The stage is whatever box the words leave; the code is the largest square
-     that fits in it, up to its full size. */
   .kiosk-shell--waiting .kiosk-qr__stage {
     height: 100%;
     container-type: size;
@@ -450,8 +415,6 @@
   }
 }
 
-/* A portrait display (a totem, or a monitor turned on its side) stacks the
-   words above the code and lets the code grow with the width it now has. */
 @media (min-width: 621px) and (max-aspect-ratio: 1/1) {
   .kiosk-shell--waiting {
     display: flex;
@@ -470,10 +433,7 @@
   }
 }
 
-/* --- After a phone has connected ----------------------------------------- */
 
-/* Once a phone owns the session, the shared screen stops asking the room to
-   scan a code that is no longer valid and starts saying where the work is. */
 .kiosk-shell--connected {
   display: grid;
   grid-template-rows: auto 1fr;
@@ -539,8 +499,6 @@
   font-weight: 650;
 }
 
-/* The document as a room full of strangers is allowed to see it: a shape and a
-   stage. Never a name, never a thumbnail, never a page. */
 .kiosk-token {
   display: grid;
   place-items: center;
@@ -581,7 +539,6 @@
   }
 }
 
-/* Four stations joined by a line, the way a parcel tracker reads. */
 .kiosk-journey {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -626,8 +583,6 @@
 .kiosk-journey small {
   font-size: 0.72em;
 }
-/* Reached, in progress, and still to come differ in words, icon and weight as
-   well as colour, so the sequence reads without colour. */
 .kiosk-journey .is-done {
   border-color: var(--pc-success-surface);
   background: var(--pc-success-surface);
@@ -669,7 +624,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --- Finished, or unavailable ---------------------------------------------- */
 
 .kiosk-result {
   box-sizing: border-box;
@@ -678,9 +632,6 @@
   display: grid;
   align-content: center;
   justify-items: center;
-  /* Height-led spacing: at 1280x720 (a 1080p kiosk at 150% Windows scaling)
-     it tightens so the countdown line stays on screen instead of below the
-     fold. */
   gap: clamp(10px, 1.7vh, 20px);
   padding: clamp(88px, 12vh, 132px) 48px clamp(20px, 4vh, 44px);
   background: var(--pc-background);
@@ -713,7 +664,6 @@
   color: var(--pc-text-muted) !important;
   font-size: clamp(16px, 2.4vh, 24px) !important;
 }
-/* "Take your paper" is the one instruction left, so it gets the panel. */
 .kiosk-result .kiosk-result__next {
   display: inline-flex;
   align-items: center;
@@ -807,8 +757,6 @@
 .kiosk-result__actions button svg {
   color: var(--pc-brand);
 }
-/* Staff recovery action. It stays reachable but must not compete with the
-   visitor's own next step, so it is deliberately the quietest control here. */
 .kiosk-download {
   min-height: 48px;
   padding: 8px 16px;
@@ -857,7 +805,6 @@
   color: var(--pc-success);
 }
 
-/* --- Narrow and portrait displays ----------------------------------------- */
 
 @media (max-width: 960px) {
   .kiosk-layout {

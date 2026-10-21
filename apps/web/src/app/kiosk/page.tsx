@@ -10,7 +10,5 @@ export default async function BrowserKioskPage({
 }) {
   if (process.env.NODE_ENV === "production" && !isBrowserKioskEnabled()) notFound();
   const { printing, sound } = await searchParams;
-  // `?sound=off` for a counter where a completion tone would carry further than
-  // it helps. The screen says the same thing either way.
   return <BatchKioskSimulator automaticPrinting={printing === "auto"} sound={sound !== "off"} />;
 }

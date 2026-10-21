@@ -6,11 +6,6 @@ import { StatusIcon, Wordmark } from "@print-cess/ui";
 
 import { requestLocale } from "@/lib/request-locale";
 
-/**
- * A wrong or stale address. The likeliest visitor here scanned something that
- * did not survive the trip, so the one useful instruction is where printing
- * actually starts: the QR code on the big screen.
- */
 export default async function NotFound() {
   const locale = await requestLocale();
   const text = (key: string) => translate(locale, key);

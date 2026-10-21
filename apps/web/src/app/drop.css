@@ -1,6 +1,3 @@
-/* File hand-off between two phones. The screens reuse the mobile print flow's
-   shell, spacing, and button sizes so the two halves of the service feel like
-   one product; only what is genuinely new to a transfer is styled here. */
 
 .drop-visually-hidden {
   position: absolute;
@@ -80,8 +77,6 @@
   min-width: 0;
   color: var(--pc-text-primary);
   font-weight: 650;
-  /* A name arrives from another device and can be long or unbroken. Wrap it
-     rather than letting one file push the whole screen sideways. */
   overflow-wrap: anywhere;
 }
 .drop-file-list__size {
@@ -174,8 +169,6 @@
   text-align: center;
 }
 
-/* The code is read out loud and typed on another phone, so it is set wide,
-   monospaced, and large enough to be legible at arm's length. */
 .drop-code {
   display: grid;
   gap: 4px;
@@ -253,8 +246,6 @@
   height: 20px;
 }
 
-/* Camera scanning. The preview is the whole instruction, so it gets the room a
-   phone held at arm's length needs, and a frame that says where to aim. */
 .drop-scan {
   justify-items: stretch;
 }
@@ -268,11 +259,7 @@
   background: var(--pc-surface-inverse-deep);
 }
 
-/* --- Choosing files ------------------------------------------------------ */
 
-/* A pointer environment can drop files straight onto the page. The buttons stay
-   inside the target, so the drag affordance is an addition rather than the only
-   way in — a phone has no drag at all. */
 .drop-target__hint {
   display: none;
   align-items: center;
@@ -287,7 +274,6 @@
   height: 20px;
   color: var(--pc-text-brand);
 }
-/* Only shown where a drag is possible at all. */
 @media (hover: hover) and (pointer: fine) {
   .drop-target__hint {
     display: flex;
@@ -299,7 +285,6 @@
   gap: 8px;
 }
 
-/* --- One file in a list -------------------------------------------------- */
 
 .drop-file-list--removable li,
 .drop-file-list--actions li {
@@ -361,9 +346,6 @@
   font-size: 15px !important;
   line-height: 1.4 !important;
 }
-/* State is carried by the sentence first. The colour and the marker are a
-   second and third channel, never the only one, so the screen still reads on a
-   monochrome display and to somebody who cannot distinguish these hues. */
 .drop-file--saved .drop-file__state,
 .drop-file--shared .drop-file__state {
   color: var(--pc-success) !important;
@@ -383,8 +365,6 @@
   color: var(--pc-destructive);
 }
 .drop-file--saving .drop-file__icon {
-  /* The in-flight hue is the brand's own "working" indigo, the same one the
-     sending phone's progress bar uses, so both ends speak one language. */
   background: var(--pc-transfer-active);
   color: var(--pc-text-on-brand);
 }
@@ -413,7 +393,6 @@
   font-weight: 700;
 }
 
-/* --- Waiting for the other phone ----------------------------------------- */
 
 .drop-still-sending {
   display: grid;
@@ -429,9 +408,6 @@
   font-size: 15px !important;
 }
 
-/* A receiver who arrived early is connected and waiting. The pulse says the
-   line is alive without inventing a percentage nobody can measure; the sentence
-   beside it says the same thing, so nothing depends on the motion. */
 .drop-pulse {
   display: grid;
   place-items: center;
@@ -456,8 +432,6 @@
   }
 }
 
-/* The two digits are the one thing a person has to read off another phone
-   across a table, so they get the largest type on the screen. */
 .pairing-digits {
   display: grid;
   gap: 6px;
@@ -499,8 +473,6 @@
   width: 100%;
 }
 
-/* One shape, shown as large as the digits were: the sender is reading it from
-   arm's length on somebody else's phone. */
 .pairing-shown {
   display: grid;
   gap: 10px;
@@ -538,7 +510,6 @@
   color: var(--pc-text-primary);
   cursor: pointer;
   font: inherit;
-  /* One wrong receiver choice consumes the pairing, so targets are generous. */
   min-height: 116px;
 }
 .pairing-choices button:hover:not(:disabled) {
@@ -558,8 +529,6 @@
   color: var(--pc-text-brand);
 }
 
-/* A keypad rather than a text field: two digits typed with a thumb, on a phone
-   whose keyboard may not open in numeric mode for a text input. */
 .pairing-keypad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -608,8 +577,6 @@
   opacity: 0.5;
 }
 
-/* The link fallback is for people who were sent one, so it stays folded away
-   behind the two digits rather than competing with them. */
 .drop-paste {
   width: 100%;
 }
@@ -625,9 +592,6 @@
   margin-block-start: 10px;
 }
 
-/* --- Shared consumer header -------------------------------------------------
-   The name leads home; the capability label underneath ties the two halves of
-   a hand-off (and the scanner) into one product. */
 
 .app-topbar__home {
   display: inline-flex;
@@ -656,9 +620,6 @@
   padding-top: 10px;
 }
 
-/* --- Where a file comes from ----------------------------------------------
-   Two equal tiles. Large enough to hit with a thumb without looking, and
-   labelled with what lives there rather than with a technical source name. */
 
 .source-picker {
   display: grid;
@@ -716,8 +677,6 @@
   line-height: 1.35;
 }
 
-/* The whole pick step accepts a dropped file; this is the only visible sign
-   of it, and it shows only where dragging is possible at all. */
 .drop-pick {
   border-radius: var(--pc-radius-lg);
   outline: 2px dashed transparent;
@@ -739,9 +698,6 @@
   transform: scaleX(-1);
 }
 
-/* --- Ready to hand over -----------------------------------------------------
-   Status first, then the code, then the other ways to pass it on. Erasing is
-   last and quiet: it is final, and it is never the next step. */
 
 .drop-ready .drop-status {
   justify-self: start;
@@ -758,8 +714,6 @@
 .drop-ready .drop-status.is-delivered svg {
   color: var(--pc-success);
 }
-/* One card for the code and the link. The QR keeps its own scan frame; the
-   card around both carries the border and the lift. */
 .drop-handoff {
   display: grid;
   gap: 14px;
@@ -806,9 +760,6 @@
   font-size: 16px;
 }
 
-/* The sender only chooses a shape to show; nothing is consumed by a wrong tap
-   here, so the four choices sit in a compact row rather than taking the
-   generous receiver-side targets that guard a single attempt. */
 .pairing-pick .pairing-choices button {
   grid-auto-flow: column;
   justify-content: start;
@@ -828,7 +779,6 @@
   font-size: 20px !important;
 }
 
-/* Changing the selection is secondary to sending it. */
 .drop-selection__actions {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 176px), 1fr));
 }
@@ -838,8 +788,6 @@
   font-size: 16px;
 }
 
-/* Received files: each one's save action is the same size, at the start of the
-   row, so a list of five reads as a list and not as a wall of buttons. */
 .drop-file-list--actions .drop-file__actions > * {
   flex: 0 1 auto;
   width: auto;
@@ -849,8 +797,6 @@
   font-size: 16px;
 }
 
-/* The ways into a transfer other than the keypad: scanning, pasting a link,
-   or switching to sending. They follow the keypad directly. */
 .drop-receive-alt {
   display: grid;
   gap: 12px;
@@ -860,21 +806,12 @@
   justify-self: center;
 }
 
-/* The language control sizes to the language it shows rather than the longest
-   of thirteen, so it shares the header row with the name on a phone. */
 .drop-language select {
   field-sizing: content;
   padding-inline-end: 2px;
 }
 
-/* --- Sending, 2026-10-13 pass ----------------------------------------------
-   Checked against the redesign, UI/UX and motion checklists the team was
-   given, inside this brand: one primary action per screen, secondary actions
-   visibly subordinate, the fallback behind progressive disclosure, a clear
-   success state with a next step, and motion that only marks a change. */
 
-/* Changing the selection: two compact actions on one row, not two more
-   full-width buttons stacked under the list. */
 .drop-selection__actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -889,7 +826,6 @@
   background: var(--pc-surface-brand-subtle);
 }
 
-/* Who has the files now, as the largest status on the screen once delivered. */
 .drop-ready .drop-status.is-delivered {
   justify-self: stretch;
   padding: 14px 16px;
@@ -898,7 +834,6 @@
   animation: drop-arrive var(--pc-duration-slow) var(--pc-ease-out);
 }
 
-/* The fallback hand-off, one tap away. */
 .drop-more-ways {
   border: 1px solid var(--pc-border);
   border-radius: var(--pc-radius-lg);
@@ -944,8 +879,6 @@
   padding: 0 16px 16px;
 }
 
-/* Erasing is final and never the next step: a quiet red text action at the
-   end, not a second big button competing with the code. */
 .drop-erase.pc-button {
   justify-self: center;
   min-height: 44px;
@@ -959,7 +892,6 @@
   background: var(--pc-destructive-surface);
 }
 
-/* A new stage arrives from just below, once; nothing loops. */
 .drop-pick,
 .drop-ready {
   animation: drop-arrive var(--pc-duration-slow) var(--pc-ease-out);
@@ -987,10 +919,6 @@
   }
 }
 
-/* --- Receiving, 2026-10-13 pass ---------------------------------------------
-   Same checklists as the sending screens: the next digit is shown, the one
-   forward action stays on screen, rows only speak when they have news, and
-   the end of the visit is announced where the eye already is. */
 
 .pairing-entry--slots {
   display: flex;
@@ -1020,12 +948,10 @@
   background: var(--pc-surface-brand-subtle);
 }
 
-/* A keypad key gives way under the finger. */
 .pairing-keypad button:active:not(:disabled) {
   transform: scale(0.96);
 }
 
-/* Per-file actions: compact, so a list of files reads as a list. */
 .drop-receive-files .drop-file-list--actions .drop-file__actions > * {
   min-width: 0;
   min-height: 44px;
