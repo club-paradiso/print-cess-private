@@ -15,7 +15,6 @@ end
 return 0
 `;
 
-/** Read and delete in one operation: even a wrong shape gets one attempt. */
 const REDEEM_SCRIPT = `
 local current = redis.call('GET', KEYS[1])
 if not current then return false end
