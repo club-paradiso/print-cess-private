@@ -213,6 +213,27 @@ describe("the download fallback", () => {
     const capabilities = { ...saveCapabilities(), canStage: true };
     expect(() => downloadTarget(MEMORY_SAVE_LIMIT_BYTES * 4, capabilities)).not.toThrow();
   });
+
+  it("rejects oversized memory fallback when OPFS is advertised but access is denied", async () => {
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: {
+        ...originalNavigator,
+        storage: {
+          getDirectory: vi.fn(async () => {
+            throw new DOMException("Storage blocked by workstation policy", "SecurityError");
+          }),
+        },
+      },
+    });
+    const target = downloadTarget(MEMORY_SAVE_LIMIT_BYTES + 1);
+    await expect(target.open({ name: "huge.bin", type: "" })).rejects.toMatchObject({
+      code: "dropTooLargeForBrowser",
+    });
+    // Small files still use the safe in-memory fallback when staging is denied.
+    const small = downloadTarget(16);
+    await expect(small.open({ name: "small.bin", type: "" })).resolves.toBeDefined();
+  });
 });
 
 describe("a folder the visitor chose", () => {
