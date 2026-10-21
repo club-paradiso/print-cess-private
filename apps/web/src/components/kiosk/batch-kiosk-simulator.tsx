@@ -108,7 +108,7 @@ export function BatchKioskSimulator({
   services?: boolean;
   initialLocale?: SupportedLocale;
 }) {
-  const [locale, setLocale] = useVisitorLocale(initialLocale);
+  const [locale, setLocale] = useVisitorLocale(initialLocale, initialLocale);
   const [session, setSession] = useState<RegisteredSession>();
   const [status, setStatus] = useState<KioskStatus>("preparing");
   const [remaining, setRemaining] = useState(120);
