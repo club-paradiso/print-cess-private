@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   autoformat:
-    if: github.event.head_commit.message == 'chore: run one-time Prettier repair for PR 150'
+    if: "github.event.head_commit.message == 'chore: run one-time Prettier repair for PR 150'"
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
