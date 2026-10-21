@@ -126,9 +126,6 @@ jobs:
             throw "NuGet reported vulnerable packages"
           }
 
-      # The audit verdict is the exit code of the two steps above. This upload
-      # only preserves their reports, so a full Actions storage quota must not
-      # turn a clean audit red.
       - name: Upload audit evidence
         if: always()
         continue-on-error: true
@@ -156,9 +153,4 @@ jobs:
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # The scan runs with `--redact`, so the SARIF artifact carries nothing
-          # the job log and job summary do not already show, and this step has no
-          # `continue-on-error` seam to protect the verdict: a full Actions
-          # storage quota failed the upload inside the action and reported a
-          # clean scan as a failed check. Keep the verdict in the exit code.
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"

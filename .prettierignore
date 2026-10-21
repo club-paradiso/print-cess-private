@@ -10,6 +10,5 @@ work
 outputs
 apps/kiosk/**/bin
 apps/kiosk/**/obj
-# NuGet writes these lock files; its formatting is not Prettier's.
 apps/kiosk/**/packages.lock.json
 apps/web/public/pdf.worker.min.mjs

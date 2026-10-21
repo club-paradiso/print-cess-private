@@ -71,9 +71,6 @@ case "$action" in
       printf '%s\n' "The kiosk is not installed. Run --install first." >&2
       exit 66
     fi
-    # Stop the browser, take its profile with it, then start clean. The launcher
-    # also resets the profile on every launch; this covers a station that must be
-    # cleared without waiting for the next launch.
     /bin/launchctl bootout "$service_target" >/dev/null 2>&1 || true
     "$source_launcher" --reset-profile
     /bin/launchctl enable "$service_target"
