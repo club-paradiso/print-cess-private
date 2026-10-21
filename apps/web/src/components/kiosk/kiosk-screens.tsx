@@ -66,12 +66,42 @@ const SPOTLIGHT_INTERVAL_MS = 4500;
  * QR code; these are the other doors, so nobody who came to send a file or
  * scan a page has to know another address.
  */
-const SERVICES: { href: string; key: string; korean: string; english: string; icon: typeof Send }[] = [
+const SERVICES: {
+  href: string;
+  key: string;
+  korean: string;
+  english: string;
+  icon: typeof Send;
+}[] = [
   { href: "/send", key: "homeShareCta", korean: "파일 보내기", english: "Send files", icon: Send },
-  { href: "/receive", key: "homeReceiveCta", korean: "파일 받기", english: "Receive files", icon: ArrowDownToLine },
-  { href: "/scan", key: "homeScanCta", korean: "문서 스캔", english: "Scan a document", icon: ScanLine },
-  { href: "/workstation", key: "homeWorkstationCta", korean: "업무용 PC", english: "Work computer", icon: Building2 },
-  { href: "/start", key: "homeStepsLabel", korean: "이용 안내", english: "How it works", icon: CircleHelp },
+  {
+    href: "/receive",
+    key: "homeReceiveCta",
+    korean: "파일 받기",
+    english: "Receive files",
+    icon: ArrowDownToLine,
+  },
+  {
+    href: "/scan",
+    key: "homeScanCta",
+    korean: "문서 스캔",
+    english: "Scan a document",
+    icon: ScanLine,
+  },
+  {
+    href: "/workstation",
+    key: "homeWorkstationCta",
+    korean: "업무용 PC",
+    english: "Work computer",
+    icon: Building2,
+  },
+  {
+    href: "/start",
+    key: "homeStepsLabel",
+    korean: "이용 안내",
+    english: "How it works",
+    icon: CircleHelp,
+  },
 ];
 
 type LocaleChange = (locale: SupportedLocale) => void;
