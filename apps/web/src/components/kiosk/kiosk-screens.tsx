@@ -165,6 +165,7 @@ export function KioskWaitingScreen({
   }, []);
 
   const spotlight = SPOTLIGHT_LOCALES[spotlightIndex] ?? "zh-CN";
+  const navigationLabel = locale === "ko" ? "다른 기능" : translate(locale, "homeMoreTitle");
   const lifetime = session ? Math.max(1, sessionLifetime) : 1;
   const qrProgress = session ? Math.min(1, remaining / lifetime) : 1;
 
@@ -188,7 +189,7 @@ export function KioskWaitingScreen({
           </p>
         ) : null}
         {services ? (
-          <nav className="kiosk-services" aria-label={locale === "ko" ? "다른 기능" : translate(locale, "homeMoreTitle")}>
+          <nav className="kiosk-services" aria-label={navigationLabel}>
             <ul>
               {SERVICES.map(({ href, key, korean, english, icon: Icon }) => (
                 <li key={href}>
