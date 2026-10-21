@@ -6,19 +6,11 @@ import { createSyntheticPdf, createSyntheticPng } from "@print-cess/test-fixture
 let kioskRateLimitBucket = 0;
 
 async function openMobile(kiosk: Page, context: BrowserContext): Promise<Page> {
-  // Keep each test in its own synthetic reverse-proxy bucket. The real kiosk
-  // creation limit is intentionally shared per client address, but an E2E suite
-  // that opens many independent kiosks in one minute must not make later tests
-  // depend on how many earlier tests happened to run.
   kioskRateLimitBucket += 1;
   await context.setExtraHTTPHeaders({
     "x-forwarded-for": `203.0.113.${kioskRateLimitBucket}`,
   });
 
-  // Next development mode compiles route handlers on first use. Warm the
-  // one-shot claim endpoint before creating a real session so a cold compiler
-  // cannot consume the client's 15-second request timeout and spend the QR
-  // claim after the browser has already shown a network error.
   await kiosk.request.get("/api/sessions/e2e-cold-start/claim", { timeout: 60_000 });
   await kiosk.goto("/kiosk");
   const qr = kiosk.locator(".kiosk-qr");
@@ -55,16 +47,13 @@ test("twelve pages meets the paywall rather than an error", async ({ page, conte
   const dialog = paywall(mobile);
   await expect(dialog).toBeVisible();
 
-  // The four facts a blocked visitor needs, all on screen at once.
   await expect(dialog.getByText("12 pages", { exact: true })).toBeVisible();
   await expect(dialog.getByText("Up to 11 pages", { exact: true })).toBeVisible();
   await expect(dialog.getByText("This print job is over the free limit.")).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Choose files again" })).toBeVisible();
 
-  // And the fact that keeps the joke from being a lie.
   await expect(dialog.getByText(/not a product for sale/u)).toBeVisible();
 
-  // Nothing was carried forward into the print flow.
   await expect(mobile.getByRole("heading", { name: "Is this the right page?" })).toHaveCount(0);
 });
 
@@ -106,14 +95,12 @@ test("past the technical ceiling the joke stops", async ({ page, context }) => {
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText("51 pages", { exact: true })).toBeVisible();
   await expect(dialog.getByText("50 pages", { exact: true })).toBeVisible();
-  // No prices: a subscription cannot raise a machine limit, so none is offered.
   await expect(dialog.getByText("₩999,000")).toHaveCount(0);
   await expect(dialog.getByRole("button", { name: "Cancel" })).toHaveCount(0);
 });
 
 test("a batch is judged on its total, not file by file", async ({ page, context }) => {
   const mobile = await openMobile(page, context);
-  // 7 + 1 + 4 = 12. Every file clears the limit alone; together they do not.
   await mobile.getByTestId("file-input").setInputFiles([
     {
       name: "a-7p.pdf",
@@ -139,7 +126,6 @@ test("a batch is judged on its total, not file by file", async ({ page, context 
 
 test("a batch one page under the limit still prints", async ({ page, context }) => {
   const mobile = await openMobile(page, context);
-  // 7 + 1 + 3 = 11.
   await mobile.getByTestId("file-input").setInputFiles([
     {
       name: "a-7p.pdf",

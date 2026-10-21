@@ -43,7 +43,6 @@ test("document scanner detects edges, lets the user refine them, and produces an
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(dialog).toBeHidden({ timeout: 60_000 });
 
-  // Image-only PDF is the reliable default; it must not need an OCR download.
   await expect(page.getByRole("checkbox", { name: /Searchable PDF/u })).not.toBeChecked();
   await page.getByRole("button", { name: "Make PDF" }).click();
   await expect(page.getByRole("heading", { name: "Your scan is ready" })).toBeVisible({
