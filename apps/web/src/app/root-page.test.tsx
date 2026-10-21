@@ -29,7 +29,12 @@ describe("root page", () => {
     });
 
     expect(redirect).not.toHaveBeenCalled();
-    expect(page.props).toEqual({ automaticPrinting: true, sound: false, services: true, initialLocale: "ko" });
+    expect(page.props).toEqual({
+      automaticPrinting: true,
+      sound: false,
+      services: true,
+      initialLocale: "ko",
+    });
   });
 
   it("sends visitors to the guide when the browser kiosk is switched off", async () => {
