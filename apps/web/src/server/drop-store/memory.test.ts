@@ -36,8 +36,6 @@ function drop(overrides: Partial<DropRecord> = {}): DropRecord {
 let store: MemoryDropStore;
 
 beforeEach(() => {
-  // The store prunes against the wall clock, so the suite pins it next to the
-  // timestamps the fixtures use.
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
   store = new MemoryDropStore();
@@ -72,7 +70,6 @@ describe("MemoryDropStore", () => {
     await store.create(drop(), 600_000);
     await store.commitParts(DROP_ID, OWNER, [{ index: 0, size: 40 }], NOW);
     const repeated = await store.commitParts(DROP_ID, OWNER, [{ index: 0, size: 40 }], NOW);
-    // A phone that retries after a lost response must not double-count bytes.
     expect(repeated.totalCiphertextBytes).toBe(40);
     expect(repeated.revision).toBe(1);
   });
@@ -147,8 +144,6 @@ describe("MemoryDropStore", () => {
     await store.seal(DROP_ID, OWNER, NOW);
     await store.recordReceiverEvent(DROP_ID, "opened", NOW);
     await store.recordReceiverEvent(DROP_ID, "downloading", NOW);
-    // Opening a transfer is not downloading it, and downloading it is not the
-    // same as the other phone reporting that it finished.
     await expect(store.get(DROP_ID)).resolves.toMatchObject({
       openCount: 1,
       downloadCount: 1,
@@ -166,8 +161,6 @@ describe("MemoryDropStore", () => {
   });
 
   it("refuses a commit that would carry more than the declared size", async () => {
-    // The declared size is what the configured ceiling was checked against, so
-    // a sender that under-declared cannot make up the difference in commits.
     await store.create(drop({ partCount: 1, totalBytes: 32, parts: [null] }), 600_000);
     await expect(
       store.commitParts(DROP_ID, OWNER, [{ index: 0, size: 4096 }], NOW),
