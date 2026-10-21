@@ -188,7 +188,7 @@ export function KioskWaitingScreen({
           </p>
         ) : null}
         {services ? (
-          <nav className="kiosk-services" aria-label={translate(locale, "homeMoreTitle")}>
+          <nav className="kiosk-services" aria-label={locale === "ko" ? "다른 기능" : translate(locale, "homeMoreTitle")}>
             <ul>
               {SERVICES.map(({ href, key, korean, english, icon: Icon }) => (
                 <li key={href}>
