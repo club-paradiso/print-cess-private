@@ -1,17 +1,22 @@
+"use client";
+
+import { useState } from "react";
+
 import { WorkstationReadiness } from "@/app/workstation/workstation-readiness";
 
 export function EnvironmentStatus({ locale }: { locale: string }) {
   const ko = locale === "ko";
+  const [expanded, setExpanded] = useState(false);
   return (
     <section className="home-environment" id="environment">
-      <details>
+      <details onToggle={(event) => setExpanded(event.currentTarget.open)}>
         <summary>{ko ? "이 기기에서 잘 작동하는지 확인하기" : "Check compatibility on this device"}</summary>
         <p>
           {ko
             ? "휴대전화와 업무용 PC 모두 같은 보내기·받기 기능을 사용합니다. 진단은 기능 지원 여부만 확인하며 실제 파일 전송이나 인쇄 성공을 보증하지 않습니다."
             : "Phones and work computers use the same transfer flow. This checks browser capabilities and the API, not whether an actual file transfer or print will succeed."}
         </p>
-        <WorkstationReadiness
+        {expanded ? <WorkstationReadiness
           copy={{
             checking: ko ? "기기 환경을 확인하고 있습니다" : "Checking this device",
             ready: ko ? "기본 전송 기능을 사용할 조건이 갖춰졌습니다" : "Basic requirements are available",
@@ -46,7 +51,7 @@ export function EnvironmentStatus({ locale }: { locale: string }) {
               ? "이 결과는 실제 업로드·다운로드 또는 프린터 테스트가 아닙니다. 기관 보안정책이 우선합니다."
               : "This is not an upload, download, or printer test. Organizational policy always applies.",
           }}
-        />
+        /> : null}
       </details>
     </section>
   );
