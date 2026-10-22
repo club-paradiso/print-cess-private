@@ -71,7 +71,9 @@ describe("workstation readiness verdict", () => {
 
   it.each([429, 500])("does not claim readiness when the API returns HTTP %i", async (status) => {
     await renderWith(async () => Response.json({ error: { code: "unavailable" } }, { status }));
-    expect(container.querySelector(".workstation-readiness__headline")?.textContent).toBe("BLOCKED");
+    expect(container.querySelector(".workstation-readiness__headline")?.textContent).toBe(
+      "BLOCKED",
+    );
     expect(container.textContent).toContain("SERVICE ERROR");
   });
 
