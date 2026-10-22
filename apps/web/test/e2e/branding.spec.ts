@@ -20,13 +20,19 @@ test("the root URL opens the shared display", async ({ page }) => {
     [/파일 보내기/u, "/send"],
     [/파일 받기/u, "/receive"],
     [/문서 스캔/u, "/scan"],
-    [/업무용 PC/u, "/workstation"],
     [/이용 안내/u, "/start"],
   ] as const) {
     await expect(more.getByRole("link", { name })).toHaveAttribute("href", href);
   }
   await more.getByRole("link", { name: /파일 보내기/u }).click();
   await expect(page).toHaveURL(/\/send$/u);
+});
+
+test("the legacy workstation URL lands on the real home without looping", async ({ page }) => {
+  await page.goto("/workstation");
+  await expect(page).toHaveURL(/\/$/u);
+  await expect(page.locator(".kiosk-qr")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: /다른 기능/u })).toBeVisible();
 });
 
 test("the station URL keeps the screen to the QR code alone", async ({ page }) => {
