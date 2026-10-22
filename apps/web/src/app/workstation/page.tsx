@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-// Keep legacy links working while routing every device to the same set of tools.
+// Legacy workstation bookmarks open the actual public landing page, not the help screen.
 export default function WorkstationPage() {
-  redirect("/start#environment");
+  redirect("/");
 }

@@ -4,7 +4,6 @@ import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import {
   ArrowDownToLine,
-  Building2,
   Camera,
   CheckCircle2,
   CircleHelp,
@@ -93,13 +92,6 @@ const SERVICES: {
     korean: "문서 스캔",
     english: "Scan a document",
     icon: ScanLine,
-  },
-  {
-    href: "/workstation",
-    key: "homeWorkstationCta",
-    korean: "업무용 PC",
-    english: "Work computer",
-    icon: Building2,
   },
   {
     href: "/start",

@@ -7,8 +7,8 @@ vi.mock("next/navigation", () => ({ redirect: redirectMock }));
 import WorkstationPage from "./page";
 
 describe("legacy workstation entry", () => {
-  it("routes to the common tools and their environment diagnostics", () => {
+  it("routes directly to the public home without a workstation loop", () => {
     WorkstationPage();
-    expect(redirectMock).toHaveBeenCalledWith("/start#environment");
+    expect(redirectMock).toHaveBeenCalledWith("/");
   });
 });

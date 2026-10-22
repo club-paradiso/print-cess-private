@@ -2,7 +2,7 @@
 
 Print-cess can be used from a managed government or public-sector Windows workstation through the normal web application. The workstation flow is intentionally browser-only: it does not require a desktop installation, browser extension, local administrator rights, USB access, ActiveX, or a dedicated kiosk runtime.
 
-The shared entry point for every device is `/start`. Legacy `/workstation` bookmarks redirect to `/start#environment`, which contains the same browser/network diagnostics. No separate workstation transfer implementation exists. The print display stays on `/kiosk` (and the legacy `/` route) until physical kiosk startup URLs are migrated and accepted.
+The main entry point is `/`, which shows the shared print screen plus direct Send, Receive, and Scan actions. Legacy `/workstation` bookmarks redirect to `/`, not to the help screen; the public display no longer links back to `/workstation`, avoiding a navigation loop. `/start` remains the optional visitor guidance and environment diagnostics page. If the browser kiosk is disabled in production, `/` already redirects to `/start`. Printer-specific kiosk sessions remain isolated at `/kiosk`.
 
 ## Supported operating model
 
@@ -11,7 +11,7 @@ Two directions are supported:
 1. Phone to work computer: create a transfer on `/send` from the phone, then enter the two digits and shape it shows on `/receive` from the managed computer, or paste the transfer link there. Neither needs a camera.
 2. Work computer to phone: create a transfer on `/send` from the managed computer, then open it on the phone by QR code, the two digits and shape, or the transfer link.
 
-On the public home page these entrances sit in a secondary "At work or on a public computer" section, below the consumer Print, Share, and Scan capabilities.
+The actual main screen at `/` exposes Send, Receive, and Scan directly alongside the printing QR; it does not expose a redundant Workstation menu item. On `/start`, the optional environment diagnostics remain available for any device.
 
 The common start page provides an optional environment check before the user starts. The required capabilities are:
 
