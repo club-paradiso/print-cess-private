@@ -145,7 +145,8 @@ export function WorkstationReadiness({ copy }: { copy: Copy }) {
           type="button"
           disabled={relaySelected}
           onClick={() => {
-                    setRelaySelected(true);
+            preferSameOriginStorageRoute();
+            setRelaySelected(true);
           }}
         >
           {relaySelected ? copy.relaySelected : copy.preferRelay}
@@ -159,7 +160,6 @@ export function WorkstationReadiness({ copy }: { copy: Copy }) {
 function useNetworkState(): NetworkState {
   const [state, setState] = useState<NetworkState>({ status: "checking" });
   useEffect(() => {
-    preferSameOriginStorageRoute();
     const controller = new AbortController();
     getDropCapabilities(controller.signal)
       .then((capabilities) =>
