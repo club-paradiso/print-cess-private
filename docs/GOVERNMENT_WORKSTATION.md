@@ -2,7 +2,7 @@
 
 Print-cess can be used from a managed government or public-sector Windows workstation through the normal web application. The workstation flow is intentionally browser-only: it does not require a desktop installation, browser extension, local administrator rights, USB access, ActiveX, or a dedicated kiosk runtime.
 
-The public entry point is `/workstation`.
+The shared entry point for every device is `/start`. Legacy `/workstation` bookmarks redirect to `/start#environment`, which contains the same browser/network diagnostics. No separate workstation transfer implementation exists. The print display stays on `/kiosk` (and the legacy `/` route) until physical kiosk startup URLs are migrated and accepted.
 
 ## Supported operating model
 
@@ -13,7 +13,7 @@ Two directions are supported:
 
 On the public home page these entrances sit in a secondary "At work or on a public computer" section, below the consumer Print, Share, and Scan capabilities.
 
-The workstation page performs a small local readiness check before the user starts. The required capabilities are:
+The common start page provides an optional environment check before the user starts. The required capabilities are:
 
 - HTTPS secure context;
 - standards-compliant Web Crypto;
@@ -42,7 +42,7 @@ By default the browser moves encrypted parts straight to blob storage on its own
 
 The deployment therefore also exposes each signed part operation at `/relay/blob/<path>?<signature>` on its own origin. A platform rewrite (`apps/web/src/server/blob-relay.ts`, wired in `next.config.ts`) forwards it to this deployment's own Vercel Blob store only; it is not an open proxy, and the signature, expiry, size limit, and end-to-end encryption are unchanged.
 
-- Visitors who start from `/workstation` use the same-origin route from the first part.
+- Every device uses the same transfer engine: the storage host is attempted first and the relay is used after supported network refusals. A user may explicitly select same-origin transfer in the shared environment diagnostics to avoid the initial blocked request; this is not an agency-policy bypass.
 - Everyone else tries the storage host first; if the network refuses it (network error, timeout, 403/407/451, or 5xx), the part is retried through the relay and the rest of the browser session stays on the relay.
 - An agency allowlist therefore needs only the Print-cess origin.
 - Set `PRINT_CESS_BLOB_RELAY=off` to disable the route. It is only available with the Vercel Blob provider; Railway S3 deployments still use the storage host directly.
@@ -70,7 +70,7 @@ A green application CI build is not proof that a specific managed image is usabl
 
 Minimum acceptance evidence should include:
 
-- `/workstation` loads over HTTPS;
+- `/start` loads over HTTPS and `/workstation` redirects to `/start#environment`;
 - the readiness panel reports HTTPS, Web Crypto, File API support, and a reachable Print-cess server;
 - the browser's network log shows part uploads and downloads going to `/relay/blob/...` on the Print-cess origin, with no request to the storage host;
 - a synthetic non-sensitive file can be sent from phone to workstation;

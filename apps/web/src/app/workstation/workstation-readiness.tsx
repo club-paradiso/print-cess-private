@@ -23,12 +23,17 @@ type Copy = {
   blockedHint: string;
   limitedHint: string;
   unreachableHint: string;
+  serviceErrorHint: string;
+  preferRelay: string;
+  relaySelected: string;
+  noGuarantee: string;
 };
 
 type NetworkState =
   | { status: "checking" }
   | { status: "reachable"; sameOriginTransfers: boolean }
-  | { status: "unreachable" };
+  | { status: "unreachable" }
+  | { status: "service-error" };
 
 type ReadinessCheck = {
   key: string;
@@ -44,6 +49,7 @@ export function WorkstationReadiness({ copy }: { copy: Copy }) {
   const fileApi = useSyncExternalStore(subscribeNever, readFileApi, readNotHydrated);
   const downloadApi = useSyncExternalStore(subscribeNever, readDownloadApi, readNotHydrated);
   const network = useNetworkState();
+  const [relaySelected, setRelaySelected] = useState(false);
 
   if (!hydrated) {
     return (
@@ -126,11 +132,27 @@ export function WorkstationReadiness({ copy }: { copy: Copy }) {
       </ul>
       {network.status === "unreachable" ? (
         <p>{copy.unreachableHint}</p>
+      ) : network.status === "service-error" ? (
+        <p>{copy.serviceErrorHint}</p>
       ) : requiredFailure ? (
         <p>{copy.blockedHint}</p>
       ) : optionalFailure ? (
         <p>{copy.limitedHint}</p>
       ) : null}
+      {network.status === "reachable" && network.sameOriginTransfers ? (
+        <button
+          className="workstation-prefer-relay"
+          type="button"
+          disabled={relaySelected}
+          onClick={() => {
+            preferSameOriginStorageRoute();
+            setRelaySelected(true);
+          }}
+        >
+          {relaySelected ? copy.relaySelected : copy.preferRelay}
+        </button>
+      ) : null}
+      <p>{copy.noGuarantee}</p>
     </section>
   );
 }
@@ -138,7 +160,6 @@ export function WorkstationReadiness({ copy }: { copy: Copy }) {
 function useNetworkState(): NetworkState {
   const [state, setState] = useState<NetworkState>({ status: "checking" });
   useEffect(() => {
-    preferSameOriginStorageRoute();
     const controller = new AbortController();
     getDropCapabilities(controller.signal)
       .then((capabilities) =>
@@ -151,7 +172,7 @@ function useNetworkState(): NetworkState {
         if (controller.signal.aborted) return;
         setState(
           error instanceof ApiClientError && error.status > 0
-            ? { status: "reachable", sameOriginTransfers: false }
+            ? { status: "service-error" }
             : { status: "unreachable" },
         );
       });

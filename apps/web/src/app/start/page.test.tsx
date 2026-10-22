@@ -83,7 +83,7 @@ describe("home page", () => {
 
     expect(page.props.className).toBe("home");
     expect(hrefsOf(page)).toEqual(
-      expect.arrayContaining(["/scan", "/send", "/receive", "/workstation", "/kiosk"]),
+      expect.arrayContaining(["/scan", "/send", "/receive", "#environment", "/kiosk"]),
     );
   });
 
@@ -96,7 +96,7 @@ describe("home page", () => {
     const page = await HomePage();
     const hrefs = hrefsOf(page);
 
-    expect(hrefs).toEqual(expect.arrayContaining(["/scan", "/send", "/receive", "/workstation"]));
+    expect(hrefs).toEqual(expect.arrayContaining(["/scan", "/send", "/receive", "#environment"]));
     expect(hrefs).not.toContain("/kiosk");
   });
 
@@ -135,7 +135,7 @@ describe("home page", () => {
 
     expect(page.props.className).toBe("home");
     expect(hrefsOf(page)).toEqual(
-      expect.arrayContaining(["/scan", "/send", "/receive", "/workstation", "/kiosk"]),
+      expect.arrayContaining(["/scan", "/send", "/receive", "#environment", "/kiosk"]),
     );
   });
 
@@ -203,7 +203,7 @@ describe("home page", () => {
     expect(headingsOf(page, "h3")).toEqual(["Share", "Scan"]);
     for (const visitorLink of ["/send", "/receive", "/scan"]) {
       expect(order.indexOf(visitorLink)).toBeLessThan(order.indexOf("/kiosk"));
-      expect(order.indexOf(visitorLink)).toBeLessThan(order.indexOf("/workstation"));
+      expect(order.indexOf(visitorLink)).toBeLessThan(order.indexOf("#environment"));
     }
   });
 

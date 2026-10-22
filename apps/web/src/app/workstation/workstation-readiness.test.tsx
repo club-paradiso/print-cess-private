@@ -22,6 +22,10 @@ const copy = {
   blockedHint: "blocked hint",
   limitedHint: "limited hint",
   unreachableHint: "UNREACHABLE",
+  serviceErrorHint: "SERVICE ERROR",
+  preferRelay: "USE RELAY",
+  relaySelected: "RELAY SELECTED",
+  noGuarantee: "ACTUAL TRANSFER NOT TESTED",
 };
 
 let container: HTMLDivElement;
@@ -65,14 +69,12 @@ describe("workstation readiness verdict", () => {
     expect(container.querySelector(".workstation-readiness__headline")?.textContent).toBe("READY");
   });
 
-  it("treats a rate-limited answer as proof the server is reachable", async () => {
-    await renderWith(async () =>
-      Response.json({ error: { code: "rate_limited" } }, { status: 429 }),
-    );
-    expect(container.textContent).not.toContain("UNREACHABLE");
-    expect(container.querySelector(".workstation-readiness__headline")?.textContent).not.toBe(
+  it.each([429, 500])("does not claim readiness when the API returns HTTP %i", async (status) => {
+    await renderWith(async () => Response.json({ error: { code: "unavailable" } }, { status }));
+    expect(container.querySelector(".workstation-readiness__headline")?.textContent).toBe(
       "BLOCKED",
     );
+    expect(container.textContent).toContain("SERVICE ERROR");
   });
 
   it("reports the network as blocking Print-cess when no response arrives", async () => {
