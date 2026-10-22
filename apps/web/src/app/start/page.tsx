@@ -18,6 +18,7 @@ import { Beacon, RouteGlyph, Wordmark } from "@print-cess/ui";
 
 import { PrintEntryActions, type PrintEntryLabels } from "@/components/home/print-entry-actions";
 import { HomeLanguagePicker } from "@/components/home/home-language-picker";
+import { EnvironmentStatus } from "@/components/home/environment-status";
 import { sessionOriginFrom } from "@/lib/print-qr";
 import { requestLocale } from "@/lib/request-locale";
 import { isBrowserKioskEnabled } from "@/server/demo";
@@ -173,6 +174,8 @@ export default async function HomePage() {
         </li>
       </ul>
 
+      <EnvironmentStatus locale={locale} />
+
       {/* Setting up the display and managed workstations are for the people
           who run the service, not for the visitor in the queue, so they close
           the page instead of opening it. */}
@@ -191,7 +194,7 @@ export default async function HomePage() {
             </li>
           ) : null}
           <li>
-            <a href="/workstation">
+            <a href="#environment">
               <Building2 aria-hidden="true" />
               {text("homeWorkstationCta")}
             </a>

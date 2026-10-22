@@ -74,7 +74,7 @@ test("@viewport the home leads with Print and keeps Share, Scan and workplaces b
   const workplace = page.getByRole("navigation", { name: "At work or on a public computer" });
   await expect(workplace.getByRole("link", { name: "Work computer" })).toHaveAttribute(
     "href",
-    "/workstation",
+    "#environment",
   );
 
   await expectNoSidewaysScroll(page);
