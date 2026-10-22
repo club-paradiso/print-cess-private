@@ -23,12 +23,15 @@ const messages = {
     pending: "확인 중",
     fail: "제한",
     blockedHint: "최신 Edge·Chrome 등 지원 브라우저와 보안 연결을 확인하세요.",
-    limitedHint: "일부 저장 방식이나 중계 경로를 사용할 수 없습니다. 실제 테스트 파일로 확인하세요.",
+    limitedHint:
+      "일부 저장 방식이나 중계 경로를 사용할 수 없습니다. 실제 테스트 파일로 확인하세요.",
     unreachableHint: "서비스에 연결하지 못했습니다. 네트워크 정책을 확인하세요.",
-    serviceErrorHint: "서버가 오류 또는 요청 제한을 반환했습니다. 전송 가능 상태로 판정하지 않습니다.",
+    serviceErrorHint:
+      "서버가 오류 또는 요청 제한을 반환했습니다. 전송 가능 상태로 판정하지 않습니다.",
     preferRelay: "허용된 Print-cess 주소로 파일 전송 우선 시도",
     relaySelected: "이 탭에서 동일 도메인 경로 우선 사용",
-    noGuarantee: "이 결과는 실제 업로드·다운로드 또는 프린터 테스트가 아닙니다. 기관 보안정책이 우선합니다.",
+    noGuarantee:
+      "이 결과는 실제 업로드·다운로드 또는 프린터 테스트가 아닙니다. 기관 보안정책이 우선합니다.",
   },
   en: {
     summary: "Check compatibility on this device",
