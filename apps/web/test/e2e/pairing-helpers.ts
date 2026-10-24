@@ -14,7 +14,7 @@ export async function chooseSenderShape(page: Page, shape: PairingShape = "star"
 
 export async function readShortCode(page: Page): Promise<string> {
   const digits = page.getByTestId("pairing-code");
-  await expect(digits).toHaveText(/^[0-9]{2}$/u, { timeout: 180_000 });
+  await expect(digits).toHaveText(/^[0-9]{4}$/u, { timeout: 180_000 });
   return ((await digits.textContent()) ?? "").trim();
 }
 

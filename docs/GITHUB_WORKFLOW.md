@@ -2,7 +2,7 @@
 
 ## Repository and branch strategy
 
-The repository is private at `lucanomics/paradiso-print-cess`. `main` is the releasable integration
+The repository is `club-paradiso/print-cess`. `main` is the releasable integration
 branch. Implementation occurs on short-lived branches such as `feature/initial-implementation` and
 enters `main` only through a pull request.
 
@@ -127,8 +127,8 @@ delete merged branches, allow update-branch, and enable auto-merge capability.
 The repository is currently a single-maintainer private personal repository, so required approvals
 and CODEOWNER reviews are set to zero rather than creating an impossible self-approval gate. This
 is not adequate institutional separation of duties. Active repository ruleset `19197379` protects
-`refs/tags/v*` from creation, update, and deletion by every actor except the current `lucanomics`
-user bypass. That preserves current solo release administration, but it is not independent approval.
+`refs/tags/v*` from creation, update, and deletion by every actor except the repository owner's
+bypass. That preserves current solo release administration, but it is not independent approval.
 Before Production, move or staff the repository so at least one independent approval and CODEOWNER
 review can be required, migrate the release-tag bypass to an approved institutional release role,
 decide signed-commit policy, and capture the resulting ruleset evidence.

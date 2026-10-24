@@ -1,10 +1,11 @@
 import type { PairingRecord } from "@print-cess/protocol";
 
 import type { PairingStore } from "../contracts";
-import { requireLive, requireShape } from "./transitions";
+import { guessShape, missWindowStart, pairingNotFound, requireLive } from "./transitions";
 
 export class MemoryPairingStore implements PairingStore {
   readonly #pairings = new Map<string, PairingRecord>();
+  readonly #misses = new Map<number, number>();
 
   public async claim(
     pairing: Omit<PairingRecord, "code">,
@@ -31,8 +32,23 @@ export class MemoryPairingStore implements PairingStore {
     now: number,
   ): Promise<PairingRecord> {
     const current = requireLive(await this.get(code), now);
-    this.#pairings.delete(code);
-    return requireShape(current, shape);
+    const guess = guessShape(current, shape);
+    if (guess.outcome === "match") {
+      this.#pairings.delete(code);
+      return current;
+    }
+    if (guess.remaining) this.#pairings.set(code, structuredClone(guess.remaining));
+    else this.#pairings.delete(code);
+    throw pairingNotFound();
+  }
+
+  public async recordMiss(now: number): Promise<void> {
+    const window = missWindowStart(now);
+    this.#misses.set(window, (this.#misses.get(window) ?? 0) + 1);
+  }
+
+  public async recentMisses(now: number): Promise<number> {
+    return this.#misses.get(missWindowStart(now)) ?? 0;
   }
 
   public async remove(code: string): Promise<void> {
@@ -46,6 +62,10 @@ export class MemoryPairingStore implements PairingStore {
   private prune(now: number): void {
     for (const [code, pairing] of this.#pairings) {
       if (pairing.expiresAt <= now) this.#pairings.delete(code);
+    }
+    const current = missWindowStart(now);
+    for (const window of this.#misses.keys()) {
+      if (window < current) this.#misses.delete(window);
     }
   }
 }

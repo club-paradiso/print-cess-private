@@ -13,8 +13,8 @@ import {
 const TRANSFER_CODE = "23456789ABCD";
 
 describe("nearby drop pairing", () => {
-  it("defines exactly 400 human choices with a three-minute lifetime", () => {
-    expect(PAIRING_CODE_SPACE * PAIRING_SHAPES.length).toBe(400);
+  it("defines 40,000 human choices with a three-minute lifetime", () => {
+    expect(PAIRING_CODE_SPACE * PAIRING_SHAPES.length).toBe(40_000);
     expect(PAIRING_TTL_SECONDS).toBe(180);
   });
 
@@ -61,7 +61,7 @@ describe("nearby drop pairing", () => {
   it("requires a live, strict pairing record", () => {
     const record = {
       protocolVersion: 1,
-      code: "07",
+      code: "0712",
       shape: "square",
       transferCode: TRANSFER_CODE,
       createdAt: 1_000,
@@ -74,9 +74,9 @@ describe("nearby drop pairing", () => {
     );
   });
 
-  it("normalizes one spoken digit without accepting more than two", () => {
-    expect(normalizePairingCode("7")).toBe("07");
-    expect(normalizePairingCode(" 4-2 ")).toBe("42");
-    expect(normalizePairingCode("123")).toBe("12");
+  it("normalizes spoken digits without accepting more than four", () => {
+    expect(normalizePairingCode("712")).toBe("0712");
+    expect(normalizePairingCode(" 4-2 1 9 ")).toBe("4219");
+    expect(normalizePairingCode("123456")).toBe("1234");
   });
 });

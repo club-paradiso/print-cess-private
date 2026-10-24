@@ -23,7 +23,7 @@ flowchart LR
 
 The transfer code normally travels between two people through a QR code or shared link that carries
 it in the URL fragment. On those paths it never reaches the service, and the service is never able
-to read a file it stores. The optional nearby two-digits-and-shape path below makes a narrower,
+to read a file it stores. The optional nearby four-digits-and-shape path below makes a narrower,
 explicit convenience trade-off.
 
 Scanning is the primary path on the receiving side: `/receive` opens the camera and reads the
@@ -68,16 +68,23 @@ and the two are not interchangeable.
 ### Optional nearby pairing
 
 People standing together can avoid scanning or typing the full transfer code. The sender chooses
-one of four shapes and receives two digits. After the upload finishes, the receiver enters both.
-For this path only, the service temporarily escrows the transfer code, shape, and digits for three
-minutes. A redemption atomically deletes the record before checking the shape, so a wrong shape
-uses the only attempt and an attacker cannot walk all four choices against a live code. Repeated
-misses are also limited per source address.
+one of four shapes and receives four digits, 40,000 combinations in all. After the upload
+finishes, the receiver enters both. For this path only, the service temporarily escrows the
+transfer code, shape, and digits for three minutes.
+
+A wrong shape is answered exactly like an unknown code, so a guess never reveals that a code is
+live. One wrong shape is forgiven, for a mis-tap; the second deletes the escrow atomically, so
+nobody can walk all four shapes against a live code. Misses are limited per source address and,
+because addresses and serverless instances are cheap to multiply, also counted across the whole
+service in the shared store: after 60 wrong guesses in a minute, every join pauses until the minute
+ends. That bounds a distributed guesser to about 180 guesses over a pairing's three-minute life,
+under a 0.5% chance of hitting any one pairing. Spending the budget pauses only this shortcut; QR
+and link hand-offs keep working.
 
 This optional path is not server-blind: an operator with access to the live pairing store could
 recover the transfer code during that short window. QR and shared-link delivery remain the private
 default when that trust trade-off is not acceptable. Redis applies an actual key expiry;
-PostgreSQL rejects expired records and prunes them on subsequent pairing traffic.
+PostgreSQL rejects expired records and the scheduled cleanup sweep deletes them.
 
 ---
 

@@ -162,7 +162,7 @@ checks, linear history, admin enforcement, and no force-push/delete. The solo pe
 cannot require an independent self-review. `vercel-preview` is restricted to `main`, while
 `windows-signing` and `github-release` accept only `v*` tag refs; the release workflow also requires
 the input tag, workflow ref, commit, and protected-main ancestry to agree. Active ruleset `19197379`
-restricts creation, update, and deletion of matching release tags to the current `lucanomics` user
+restricts creation, update, and deletion of matching release tags to the repository owner's
 bypass. Institutional ownership must still add approval/CODEOWNER review and migrate that bypass to
 an approved release role before Production. Use Conventional Commits and a Draft PR until evidence
 is complete.

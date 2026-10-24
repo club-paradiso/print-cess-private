@@ -49,12 +49,33 @@ describe("MemoryPairingStore", () => {
     await expect(store.redeem("42", "star", 1_000)).rejects.toBeInstanceOf(ServiceError);
   });
 
-  it("consumes a live pairing after one wrong shape", async () => {
+  it("forgives one wrong shape", async () => {
     const store = new MemoryPairingStore();
-    await store.claim(draft(), ["42"]);
+    await store.claim(draft(), ["4242"]);
 
-    await expect(store.redeem("42", "circle", 1_000)).rejects.toBeInstanceOf(ServiceError);
-    await expect(store.redeem("42", "star", 1_000)).rejects.toBeInstanceOf(ServiceError);
+    await expect(store.redeem("4242", "circle", 1_000)).rejects.toThrow(
+      "Those numbers and that shape do not match a transfer.",
+    );
+    await expect(store.redeem("4242", "star", 1_000)).resolves.toMatchObject({
+      transferCode: TRANSFER_CODE,
+    });
+  });
+
+  it("deletes the pairing on the second wrong shape", async () => {
+    const store = new MemoryPairingStore();
+    await store.claim(draft(), ["4242"]);
+
+    await expect(store.redeem("4242", "circle", 1_000)).rejects.toBeInstanceOf(ServiceError);
+    await expect(store.redeem("4242", "triangle", 1_000)).rejects.toBeInstanceOf(ServiceError);
+    await expect(store.redeem("4242", "star", 1_000)).rejects.toBeInstanceOf(ServiceError);
+  });
+
+  it("counts wrong guesses per window across every caller", async () => {
+    const store = new MemoryPairingStore();
+    await store.recordMiss(60_000);
+    await store.recordMiss(119_999);
+    expect(await store.recentMisses(90_000)).toBe(2);
+    expect(await store.recentMisses(120_000)).toBe(0);
   });
 
   it("answers an expired pairing exactly as one that never existed", async () => {

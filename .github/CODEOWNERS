@@ -1,16 +1,16 @@
 # Default owner
-* @lucanomics
+* @club-paradiso
 
 # Security-critical contracts and delivery
-/packages/protocol/ @lucanomics
-/packages/crypto/ @lucanomics
-/apps/web/src/app/api/ @lucanomics
-/apps/web/src/server/ @lucanomics
-/apps/kiosk/Paradiso.PrintCess.Core/ @lucanomics
-/apps/kiosk/Paradiso.PrintCess.Infrastructure/ @lucanomics
-/.github/workflows/ @lucanomics
-/docs/SECURITY.md @lucanomics
-/docs/THREAT_MODEL.md @lucanomics
-/docs/CRYPTOGRAPHY.md @lucanomics
-/docs/PRIVACY.md @lucanomics
-/docs/PRODUCTION_BLOCKERS.md @lucanomics
+/packages/protocol/ @club-paradiso
+/packages/crypto/ @club-paradiso
+/apps/web/src/app/api/ @club-paradiso
+/apps/web/src/server/ @club-paradiso
+/apps/kiosk/Paradiso.PrintCess.Core/ @club-paradiso
+/apps/kiosk/Paradiso.PrintCess.Infrastructure/ @club-paradiso
+/.github/workflows/ @club-paradiso
+/docs/SECURITY.md @club-paradiso
+/docs/THREAT_MODEL.md @club-paradiso
+/docs/CRYPTOGRAPHY.md @club-paradiso
+/docs/PRIVACY.md @club-paradiso
+/docs/PRODUCTION_BLOCKERS.md @club-paradiso
