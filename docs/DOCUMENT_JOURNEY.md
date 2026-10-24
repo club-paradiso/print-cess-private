@@ -183,7 +183,7 @@ code still gets the same "not found" they always did.
    glancing back at.
 2. The QR code, the private default.
 3. Share the link or copy it.
-4. The optional two-digit hand-off, folded behind one line ("QR을 찍을 수 없나요? 숫자와 도형으로
+4. The optional four-digit hand-off, folded behind one line ("QR을 찍을 수 없나요? 숫자와 도형으로
    건네기"). Its trade-off (the service holds the key for three minutes) is stated inside, where
    the choice is made, and not on the pick screen.
 5. Erase it now: final, quiet (a red text action, not a second big button), and never the next
@@ -204,7 +204,7 @@ applied only where they agree with `docs/BRAND.md`. What changed, and the rule b
 | Choosing stays bare: no strip on the first screen                                | V2 decision, kept (the tiles are the whole job) |
 | "파일 더 고르기 / 다시 고르기" became two compact actions on one row             | One primary action; secondaries subordinate     |
 | "이 파일 보내기" is pinned to the bottom of the screen                           | Primary action never below the fold             |
-| The two-digit hand-off sits behind a disclosure                                  | Progressive disclosure                          |
+| The four-digit hand-off sits behind a disclosure                                 | Progressive disclosure                          |
 | "지금 지우기" is a quiet text action                                             | Destructive actions separated from primary ones |
 | Delivered status grows and offers "다른 파일 보내기"                             | Success feedback with a next step               |
 | Each stage arrives once from 8 px below; nothing loops; off under reduced motion | Motion marks a change; rare event, subtle       |
@@ -220,7 +220,7 @@ The same checklists, applied to `/receive`:
 
 | Change                                                                                                  | Rule                                     |
 | ------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| The two digits are two large boxes; the next one to fill is outlined in indigo                          | Show where the user is (state clarity)   |
+| The four digits are four large boxes; the next one to fill is outlined in indigo                        | Show where the user is (state clarity)   |
 | A keypad key gives way under the finger (scale 0.96; off under reduced motion)                          | Press feedback                           |
 | Size and time left sit above the file list, not under it                                                | Decision facts first                     |
 | "아직 저장 안 했어요" only appears once at least one file has moved                                     | Rows speak only when they have news      |

@@ -1,5 +1,6 @@
 import {
   createPairingRequestSchema,
+  PAIRING_CODE_LENGTH,
   PAIRING_CODE_SPACE,
   PAIRING_TTL_SECONDS,
   type PairingRecord,
@@ -49,7 +50,7 @@ function drawCandidates(): string[] {
   const drawn = new Set<string>();
   while (drawn.size < CLAIM_ATTEMPTS) {
     const value = crypto.getRandomValues(new Uint32Array(1))[0]! % PAIRING_CODE_SPACE;
-    drawn.add(String(value).padStart(2, "0"));
+    drawn.add(String(value).padStart(PAIRING_CODE_LENGTH, "0"));
   }
   return [...drawn];
 }

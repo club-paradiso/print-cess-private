@@ -2,9 +2,16 @@ import { pairingRecordSchema, type PairingRecord } from "@print-cess/protocol";
 
 import type { PairingStore } from "../contracts";
 import { createPostgresExecutor, type PostgresExecutor } from "../session-store/postgres-client";
-import { pairingNotFound, requireLive, requireShape } from "./transitions";
+import {
+  guessShape,
+  missWindowStart,
+  PAIRING_MISS_WINDOW_MS,
+  pairingNotFound,
+  requireLive,
+} from "./transitions";
 
 const TABLE_NAME = "print_cess_pairing_state_v1";
+const MISS_TABLE_NAME = "print_cess_pairing_miss_v1";
 
 type PairingRow = { pairing: unknown; expires_at: string | number };
 
@@ -65,15 +72,50 @@ export class RailwayPostgresPairingStore implements PairingStore {
     now: number,
   ): Promise<PairingRecord> {
     await this.ensureSchema();
-    const stored = await this.#executor.transaction(`pairing:${code}`, async (client) => {
+    // The transaction commits the miss count or deletion; the error is thrown
+    // only after it, so a wrong shape is never rolled back.
+    const matched = await this.#executor.transaction(`pairing:${code}`, async (client) => {
       const result = await client.query<PairingRow>(
-        `DELETE FROM ${TABLE_NAME} WHERE code = $1 RETURNING pairing, expires_at`,
+        `SELECT pairing, expires_at FROM ${TABLE_NAME} WHERE code = $1 FOR UPDATE`,
         [code],
       );
       const row = result.rows[0];
-      return row ? parsePairing(row.pairing) : null;
+      if (!row) return null;
+      const stored = parsePairing(row.pairing);
+      const guess = stored.expiresAt <= now ? null : guessShape(stored, shape);
+      if (guess?.outcome === "miss" && guess.remaining) {
+        await client.query(`UPDATE ${TABLE_NAME} SET pairing = $2::jsonb WHERE code = $1`, [
+          code,
+          JSON.stringify(guess.remaining),
+        ]);
+        return null;
+      }
+      await client.query(`DELETE FROM ${TABLE_NAME} WHERE code = $1`, [code]);
+      return guess?.outcome === "match" ? stored : null;
     });
-    return requireShape(requireLive(stored, now), shape);
+    return requireLive(matched, now);
+  }
+
+  public async recordMiss(now: number): Promise<void> {
+    await this.ensureSchema();
+    await this.#executor.query(
+      `
+      INSERT INTO ${MISS_TABLE_NAME} (window_start, misses)
+      VALUES ($1, 1)
+      ON CONFLICT (window_start) DO UPDATE
+        SET misses = ${MISS_TABLE_NAME}.misses + 1
+      `,
+      [missWindowStart(now)],
+    );
+  }
+
+  public async recentMisses(now: number): Promise<number> {
+    await this.ensureSchema();
+    const result = await this.#executor.query<{ misses: string | number }>(
+      `SELECT misses FROM ${MISS_TABLE_NAME} WHERE window_start = $1`,
+      [missWindowStart(now)],
+    );
+    return Number(result.rows[0]?.misses ?? 0);
   }
 
   public async remove(code: string): Promise<void> {
@@ -84,6 +126,9 @@ export class RailwayPostgresPairingStore implements PairingStore {
   public async pruneExpired(now: number): Promise<void> {
     await this.ensureSchema();
     await this.#executor.query(`DELETE FROM ${TABLE_NAME} WHERE expires_at <= $1`, [now]);
+    await this.#executor.query(`DELETE FROM ${MISS_TABLE_NAME} WHERE window_start < $1`, [
+      missWindowStart(now) - PAIRING_MISS_WINDOW_MS,
+    ]);
   }
 
   private async ensureSchema(): Promise<void> {
@@ -94,6 +139,12 @@ export class RailwayPostgresPairingStore implements PairingStore {
           pairing JSONB NOT NULL,
           expires_at BIGINT NOT NULL,
           updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `);
+      await this.#executor.query(`
+        CREATE TABLE IF NOT EXISTS ${MISS_TABLE_NAME} (
+          window_start BIGINT PRIMARY KEY,
+          misses INTEGER NOT NULL
         )
       `);
     })().catch((error: unknown) => {

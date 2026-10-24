@@ -39,11 +39,7 @@ export function PairingEntry({
       } catch (error) {
         if (controller.signal.aborted) return;
         setDigits("");
-        setNoticeKey(
-          error instanceof ApiClientError && error.status === 404
-            ? "pairCodeUnknown"
-            : "dropNetworkError",
-        );
+        setNoticeKey(noticeFor(error));
       } finally {
         setRedeeming(false);
       }
@@ -149,4 +145,11 @@ export function PairingEntry({
       </div>
     </section>
   );
+}
+
+function noticeFor(error: unknown): string {
+  if (!(error instanceof ApiClientError)) return "dropNetworkError";
+  if (error.status === 404) return "pairCodeUnknown";
+  if (error.status === 429) return "dropTooManyTries";
+  return "dropNetworkError";
 }

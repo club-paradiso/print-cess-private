@@ -22,6 +22,24 @@ class FakeRedis implements RedisScriptClient {
   returnObjects = false;
 
   async eval(script: string, keys: string[], args: (string | number)[]): Promise<unknown> {
+    if (script.includes("'INCR'")) {
+      const count = Number(this.values.get(keys[0]!) ?? 0) + 1;
+      this.values.set(keys[0]!, String(count));
+      return count;
+    }
+    if (script.includes("cjson.decode")) {
+      const value = this.values.get(keys[0]!);
+      if (!value) return false;
+      const decoded = JSON.parse(value) as PairingRecord;
+      if (decoded.shape === args[0]) {
+        this.values.delete(keys[0]!);
+        return this.returnObjects ? decoded : value;
+      }
+      const misses = (decoded.misses ?? 0) + 1;
+      if (misses >= Number(args[1])) this.values.delete(keys[0]!);
+      else this.values.set(keys[0]!, JSON.stringify({ ...decoded, misses }));
+      return false;
+    }
     if (script.includes("'SET'")) {
       for (const [index, key] of keys.entries()) {
         if (this.values.has(key)) continue;
@@ -30,10 +48,7 @@ class FakeRedis implements RedisScriptClient {
       }
       return 0;
     }
-    const value = this.values.get(keys[0]!);
-    if (!value) return false;
-    this.values.delete(keys[0]!);
-    return this.returnObjects ? JSON.parse(value) : value;
+    throw new Error("Unexpected script");
   }
 
   async get(key: string): Promise<string | null> {
@@ -56,26 +71,40 @@ class FakeRedis implements RedisScriptClient {
 }
 
 describe("RedisPairingStore", () => {
-  it("atomically consumes a live pairing after one wrong shape", async () => {
+  it("forgives one wrong shape and deletes the pairing on the second", async () => {
     const redis = new FakeRedis();
     const store = new RedisPairingStore(redis);
-    await store.claim(draft(), ["42"]);
+    await store.claim(draft(), ["4242", "4243"]);
+    await store.claim(draft(), ["4243"]);
 
-    await expect(store.redeem("42", "circle", 1_000)).rejects.toThrow(
+    await expect(store.redeem("4242", "circle", 1_000)).rejects.toThrow(
       "Those numbers and that shape do not match a transfer.",
     );
-    await expect(store.redeem("42", "star", 1_000)).rejects.toThrow(
-      "Those numbers and that shape do not match a transfer.",
-    );
+    await expect(store.redeem("4242", "star", 1_000)).resolves.toMatchObject({
+      transferCode: TRANSFER_CODE,
+    });
+
+    await expect(store.redeem("4243", "circle", 1_000)).rejects.toThrow();
+    await expect(store.redeem("4243", "triangle", 1_000)).rejects.toThrow();
+    await expect(store.redeem("4243", "star", 1_000)).rejects.toThrow();
+  });
+
+  it("counts wrong guesses in one shared key per window", async () => {
+    const redis = new FakeRedis();
+    const store = new RedisPairingStore(redis);
+    await store.recordMiss(60_000);
+    await store.recordMiss(90_000);
+    expect(await store.recentMisses(119_999)).toBe(2);
+    expect(await store.recentMisses(120_000)).toBe(0);
   });
 
   it("accepts the decoded JSON value returned by REST Redis clients", async () => {
     const redis = new FakeRedis();
     redis.returnObjects = true;
     const store = new RedisPairingStore(redis);
-    await store.claim(draft(), ["42"]);
+    await store.claim(draft(), ["4242"]);
 
-    await expect(store.redeem("42", "star", 1_000)).resolves.toMatchObject({
+    await expect(store.redeem("4242", "star", 1_000)).resolves.toMatchObject({
       transferCode: TRANSFER_CODE,
     });
   });
