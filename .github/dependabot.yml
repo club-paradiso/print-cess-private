@@ -9,7 +9,7 @@ updates:
       timezone: Asia/Seoul
     open-pull-requests-limit: 10
     reviewers:
-      - lucanomics
+      - club-paradiso
     commit-message:
       prefix: "chore(deps)"
     groups:
@@ -27,7 +27,7 @@ updates:
       timezone: Asia/Seoul
     open-pull-requests-limit: 10
     reviewers:
-      - lucanomics
+      - club-paradiso
     commit-message:
       prefix: "chore(deps)"
     groups:
@@ -44,7 +44,7 @@ updates:
       timezone: Asia/Seoul
     open-pull-requests-limit: 10
     reviewers:
-      - lucanomics
+      - club-paradiso
     commit-message:
       prefix: "chore(deps)"
     groups:

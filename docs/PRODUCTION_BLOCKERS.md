@@ -57,7 +57,7 @@ GitHub-control, or institutional records; therefore they do not close any checkb
       `v*`-tag-only, and release inputs are bound to the workflow tag ref and protected-main
       ancestry. `Production` is also `main`-only, while Vercel Production deployment remains
       disabled. Active ruleset `19197379` restricts creation, update, and deletion of `v*` tags to
-      the current `lucanomics` user bypass. Remaining: independent/CODEOWNER and environment
+      the repository owner's bypass. Remaining: independent/CODEOWNER and environment
       reviewers, migration of that bypass to an institutional release role, signed-commit decision,
       native secret scanning and push protection, and CodeQL. GitHub returned 422/403 because native
       secret/code scanning is unavailable for this private personal repository; upgrade/move it

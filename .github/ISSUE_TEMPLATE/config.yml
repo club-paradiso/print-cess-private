@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Report a security vulnerability privately
-    url: https://github.com/lucanomics/paradiso-print-cess/security/advisories/new
+    url: https://github.com/club-paradiso/print-cess/security/advisories/new
     about: Never disclose credentials, real documents, or exploitable details in a public issue.
   - name: Read the operations runbook
-    url: https://github.com/lucanomics/paradiso-print-cess/blob/main/docs/OPERATIONS_RUNBOOK.md
+    url: https://github.com/club-paradiso/print-cess/blob/main/docs/OPERATIONS_RUNBOOK.md
     about: Use the documented P/N/A/S codes and do not retry an ambiguous print job.
