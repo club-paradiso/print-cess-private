@@ -1,62 +1,75 @@
 <p align="center">
-  <img src="docs/assets/print-cess-mark.svg" alt="Print-cess by Club Paradiso mark" width="96" />
+  <img src="docs/assets/print-cess-mark.svg" alt="Print-cess mark" width="96" />
 </p>
 
-# Print-cess by Club Paradiso
+<h1 align="center">Print-cess</h1>
 
-**Secure self-service document printing and file hand-off**
+<p align="center"><strong>by Club Paradiso</strong></p>
 
-휴대전화에서 보내고 바로 출력하는 안전한 셀프 인쇄. 파일과 사진은 휴대전화끼리 바로 주고받아요.
+<p align="center">
+  Print a document from your phone, or hand a file to another phone, without an account or an app.
+</p>
 
-This private repository contains the mobile transfer service, public browser kiosk, shared
-protocol, and Windows kiosk for a no-login, one-document, one-copy print flow. It also carries a
-phone-to-phone file hand-off at `/send` and `/receive`: end-to-end encrypted, chunked for large
-files, format blind, and needing no kiosk. Managed government and public-sector workstations can
-start from `/workstation`, which adds browser readiness checks and a policy-aware desktop entry
-without installing software or attempting to bypass endpoint controls. See `docs/FILE_TRANSFER.md`
-for how it moves bytes, `docs/FILE_COMPATIBILITY.md` for what it will carry, what it does to a file
-name, and where a received file actually ends up, and `docs/GOVERNMENT_WORKSTATION.md` for the
-managed workstation security boundary. `docs/PRODUCT_V2.md` describes the product model the public
-screens follow (Print, Share, Scan, with workplace entrances secondary) and the future native
-share-sheet path, and `docs/PRINT_FIRST_ENTRY.md` explains why Print leads the home page and how
-a visitor finds the Print-cess screen. `docs/DOCUMENT_JOURNEY.md` is the design record for what the screens say. Development uses encrypted local adapters; production integrations require
-separately approved Vercel and Upstash resources.
+<p align="center">
+  <a href="README.ko.md">한국어</a> · <a href="LICENSE">Apache-2.0</a> ·
+  <a href="SECURITY.md">Security</a>
+</p>
 
-The complete setup, security boundaries, test commands, macOS browser-kiosk procedure, Windows
-deployment procedure, and remaining production blockers are documented in `docs/`. Never use real
-personal documents in development, Preview, fixtures, or CI.
+---
 
-## Government and public-sector printing
+Print-cess was built for places where people need one page printed and have nothing but a phone:
+a government counter or an immigration office. A visitor scans a QR code on the screen
+next to the printer, picks a file, and gets one copy. They never sign up, install anything, or hand
+their phone to staff, and the file is deleted when the job is done.
 
-Print-cess is specialized for no-install document printing and file hand-off at
-government counters, including immigration offices:
+It does three things:
 
-- **Visitor print mode** at `/visitor`: a counter screen shows a QR code, the
-  print progress (scan → upload → counter print → auto-destroy), and a session
-  expiry timer. Visitors scan the QR with their own phone and upload documents —
-  no login, app install, or sign-up.
-- **Automatic file destruction**: uploaded documents are deleted from the server
-  as soon as printing finishes or the session expires. Phone-to-phone transfers
-  carry an expiry (30 minutes by default, configurable via `DROP_TTL_SECONDS`)
-  and are swept automatically when it elapses.
-- **No policy bypass**: Print-cess uses standard browser HTTPS and Web Crypto
-  and never attempts to bypass DLP, download controls, proxies, network
-  separation, or domain allowlists. Managed workstations keep using
-  `/workstation`.
+|           | What happens                                                 | Where it starts                            |
+| --------- | ------------------------------------------------------------ | ------------------------------------------ |
+| **Print** | A file on a phone becomes one printed copy.                  | The QR code on the kiosk screen (`/kiosk`) |
+| **Share** | A file goes from one phone to another, end-to-end encrypted. | `/send` and `/receive`                     |
+| **Scan**  | Paper becomes a PDF on the phone, ready to share or print.   | `/scan`                                    |
 
-See `docs/government-deployment-guide.md` for the agency onboarding procedure
-(the six production gates as a checklist) and
-`docs/immigration-office-scenario.md` for the immigration-office visitor
-document printing scenario.
+For counters, `/visitor` shows a QR code, the print progress and a countdown, and `/workstation`
+lets a managed office PC take part through an ordinary browser, without installing software or
+working around endpoint controls.
 
-## Required tools
+## How it protects documents
 
-- Node.js 24.18.0 and pnpm 11.15.1 through Corepack;
-- Git and GitHub CLI for the review workflow;
-- .NET SDK 8 on Windows for WPF runtime validation and publishing;
-- Playwright Chromium/WebKit binaries for end-to-end tests.
+- **Encrypted on the phone.** The file is encrypted before it leaves the device (P-256 ECDH,
+  HKDF, AES-256-GCM). The server and its storage only ever hold ciphertext and cannot derive the
+  key.
+- **Keys stay out of the server.** QR codes and links carry their secrets in the URL fragment,
+  which browsers never send to the server.
+- **One document, one copy, then gone.** A print session accepts one upload and allows one print.
+  Every ending, whether success, failure, cancellation, expiry or restart, leads to deletion.
+  Phone-to-phone transfers expire after 30 minutes by default.
+- **No accounts, no tracking.** There is no login and no analytics. File names never reach the
+  server.
+- **No policy bypass.** On managed computers it uses plain HTTPS and Web Crypto. It never tries to
+  get around DLP, download controls, proxies or network separation.
 
-## Quick start
+There is one deliberate exception. The optional "four digits + shape" hand-off lets the server hold
+a transfer key for three minutes so the sender can walk away. QR and link hand-offs never do this.
+[`docs/FILE_TRANSFER.md`](docs/FILE_TRANSFER.md) explains the trade-off and its limits.
+
+The full design is in [`docs/SECURITY.md`](docs/SECURITY.md),
+[`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) and [`docs/CRYPTOGRAPHY.md`](docs/CRYPTOGRAPHY.md).
+
+## Status
+
+Print-cess works end to end in development and on Preview deployments, but it is **not yet
+approved for production use with real documents**. The remaining gates, including institutional
+security and privacy review, provider approval, validation on the exact printer and a signed
+installer, are listed in
+[`docs/PRODUCTION_BLOCKERS.md`](docs/PRODUCTION_BLOCKERS.md).
+
+Never use real personal documents in development, Preview, test fixtures or CI.
+
+## Getting started
+
+You need Node.js 24.18.0 and pnpm 11.15.1 (through Corepack). The Windows kiosk also needs the
+.NET 8 SDK, and the end-to-end tests need Playwright's browsers.
 
 ```bash
 corepack enable
@@ -65,32 +78,28 @@ cp .env.example apps/web/.env.local
 pnpm dev
 ```
 
-Open `http://localhost:3000/kiosk`, scan the generated QR with a phone on the same reachable
-development URL, or open its mobile link in another browser tab. Local mode stores ciphertext
-only under an application-owned development directory. Open `http://localhost:3000/workstation`
-to exercise the managed-workstation entry and local browser capability diagnostics.
+Then open:
 
-For unattended Production printing on a Mac, configure an explicit default printer and follow
-`docs/MACOS_BROWSER_KIOSK.md`. The checked-in LaunchAgent opens the live URL with Chrome's kiosk and
-silent-printing switches in a dedicated browser profile.
+- <http://localhost:3000/kiosk> for the printer screen. Scan its QR code with a phone on the same
+  network, or open the link it shows in another browser tab.
+- <http://localhost:3000/send> and <http://localhost:3000/receive> to move a file between two tabs.
+- <http://localhost:3000/workstation> for the managed-PC entry and its browser checks.
 
-The checked-in environment example is for local development. Hosted Preview/Production fails
-closed unless exact HTTPS origins and the required Blob, Redis, QStash, kiosk-registration, and
-administrator credentials are supplied. The Windows mock printer is available only with
-`PRINT_CESS_ENVIRONMENT=Development` and a loopback server; it cannot be enabled for a Production
-installation. See `docs/VERCEL_DEPLOYMENT.md` and `docs/WINDOWS_KIOSK_DEPLOYMENT.md` before changing
-those defaults.
+Local mode keeps everything on your machine and stores only ciphertext, in a development folder
+inside the app. Hosted deployments refuse to start until real HTTPS origins and provider credentials are
+configured. See [`docs/VERCEL_DEPLOYMENT.md`](docs/VERCEL_DEPLOYMENT.md).
 
-## Repository
+## Repository layout
 
 ```text
-apps/web       Next.js public browser kiosk, mobile flow, file hand-off, and Route Handlers
-apps/kiosk     .NET 8 WPF kiosk, core, infrastructure, and tests
-packages       protocol, cryptography, translations, UI, and fixtures
-docs           architecture, security, privacy, deployment, and operations
+apps/web             Next.js app: kiosk screen, phone flows, file hand-off, API routes
+apps/kiosk           .NET 8 WPF kiosk for Windows: decryption, validation, printing
+apps/cleanup-worker  Worker that sweeps expired files when QStash is not used
+packages/            Protocol, cryptography, translations (13 languages), UI, test fixtures
+docs/                Architecture, security, privacy, deployment and operations
 ```
 
-## Validation
+## Checks
 
 ```bash
 pnpm format:check
@@ -102,40 +111,35 @@ pnpm build
 pnpm test:e2e
 ```
 
-Windows-only validation runs in GitHub Actions. A physical printer test is required before any
-real deployment; a green CI build is not evidence that a printer model or driver is operational.
-Credential-backed provider tests are intentionally separate and require the protected manual
-`Preview provider acceptance` workflow.
+The Windows kiosk is built and tested in GitHub Actions. A green build does not prove a printer
+works: run the physical printer test in
+[`docs/WINDOWS_PRINTER_ACCEPTANCE.md`](docs/WINDOWS_PRINTER_ACCEPTANCE.md) before any real
+deployment.
 
-## Review, Preview, and Windows commands
+## Deploying
 
-Keep implementation work on a short-lived branch, push it, and open a Draft PR to protected
-`main`. A merge is an integration event, not Production approval:
+| Target                         | Guide                                                                        |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| Web app on Vercel              | [`docs/VERCEL_DEPLOYMENT.md`](docs/VERCEL_DEPLOYMENT.md)                     |
+| Storage and cleanup on Railway | [`docs/RAILWAY_PROVIDERS.md`](docs/RAILWAY_PROVIDERS.md)                     |
+| Browser kiosk on a Mac         | [`docs/MACOS_BROWSER_KIOSK.md`](docs/MACOS_BROWSER_KIOSK.md)                 |
+| Windows kiosk                  | [`docs/WINDOWS_KIOSK_DEPLOYMENT.md`](docs/WINDOWS_KIOSK_DEPLOYMENT.md)       |
+| A government office            | [`docs/government-deployment-guide.md`](docs/government-deployment-guide.md) |
+| Day-to-day operation           | [`docs/OPERATIONS_RUNBOOK.md`](docs/OPERATIONS_RUNBOOK.md)                   |
 
-```bash
-git push -u origin agent/production-readiness
-gh pr create --draft --base main --head agent/production-readiness
-gh pr checks --watch
-```
+## Contributing
 
-Only after approved Preview credentials and isolated provider resources exist:
+Bug reports and pull requests are welcome. For anything larger than a small fix, please open an
+issue first so we can agree on the approach. Pull requests go to `main`, should pass the checks
+above, and must use made-up data only. [`docs/GITHUB_WORKFLOW.md`](docs/GITHUB_WORKFLOW.md)
+describes the review and release process.
 
-```bash
-pnpm dlx vercel@56.3.2 link --project paradiso-print-cess
-pnpm dlx vercel@56.3.2 env pull apps/web/.env.local --environment=preview
-pnpm dlx vercel@56.3.2
-```
+Please report security problems privately, as described in [`SECURITY.md`](SECURITY.md).
 
-On Windows PowerShell:
+## License
 
-```powershell
-dotnet restore apps/kiosk/Paradiso.PrintCess.sln --locked-mode
-dotnet build apps/kiosk/Paradiso.PrintCess.sln -c Release --no-restore
-dotnet test apps/kiosk/Paradiso.PrintCess.Tests/Paradiso.PrintCess.Tests.csproj -c Release --no-build
-dotnet publish apps/kiosk/Paradiso.PrintCess.Kiosk/Paradiso.PrintCess.Kiosk.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
-```
+Print-cess is licensed under the [Apache License 2.0](LICENSE). See [`NOTICE`](NOTICE) for
+third-party notices.
 
-Full procedures and evidence boundaries are in `docs/GITHUB_WORKFLOW.md`,
-`docs/VERCEL_DEPLOYMENT.md`, `docs/AUTHENTICODE.md`, and
-`docs/WINDOWS_PRINTER_ACCEPTANCE.md`. The final private release dossier contract is in
-`docs/READINESS_EVIDENCE.md`.
+The license covers the code, not the names. "Print-cess" and "Club Paradiso", and their logos, may
+not be used to present a modified version as the official service.
