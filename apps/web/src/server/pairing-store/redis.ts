@@ -1,10 +1,16 @@
-import { pairingRecordSchema, type PairingRecord } from "@print-cess/protocol";
+import { PAIRING_SHAPE_TRIES, pairingRecordSchema, type PairingRecord } from "@print-cess/protocol";
 
 import type { PairingStore } from "../contracts";
 import type { RedisScriptClient } from "../session-store/redis-client";
-import { pairingNotFound, requireLive, requireShape } from "./transitions";
+import {
+  missWindowStart,
+  PAIRING_MISS_WINDOW_MS,
+  pairingNotFound,
+  requireLive,
+} from "./transitions";
 
 const PAIRING_KEY_PREFIX = "pc:v1:pairing:";
+const PAIRING_MISS_KEY_PREFIX = "pc:v1:pairing-misses:";
 
 const CLAIM_SCRIPT = `
 for index, key in ipairs(KEYS) do
@@ -15,11 +21,32 @@ end
 return 0
 `;
 
+// A match consumes the escrow. A miss is counted on the record, keeping its
+// remaining lifetime, and the last allowed miss deletes it. Both a miss and an
+// unknown code return false, so the caller cannot tell them apart.
 const REDEEM_SCRIPT = `
 local current = redis.call('GET', KEYS[1])
 if not current then return false end
-redis.call('DEL', KEYS[1])
-return current
+local decoded = cjson.decode(current)
+if decoded.shape == ARGV[1] then
+  redis.call('DEL', KEYS[1])
+  return current
+end
+local misses = (tonumber(decoded.misses) or 0) + 1
+local ttl = redis.call('PTTL', KEYS[1])
+if misses >= tonumber(ARGV[2]) or ttl <= 0 then
+  redis.call('DEL', KEYS[1])
+else
+  decoded.misses = misses
+  redis.call('SET', KEYS[1], cjson.encode(decoded), 'PX', ttl)
+end
+return false
+`;
+
+const MISS_SCRIPT = `
+local count = redis.call('INCR', KEYS[1])
+if count == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end
+return count
 `;
 
 export class RedisPairingStore implements PairingStore {
@@ -50,8 +77,20 @@ export class RedisPairingStore implements PairingStore {
     shape: PairingRecord["shape"],
     now: number,
   ): Promise<PairingRecord> {
-    const raw = await this.redis.eval(REDEEM_SCRIPT, [pairingKey(code)], []);
-    return requireShape(requireLive(parsePairing(raw), now), shape);
+    const raw = await this.redis.eval(
+      REDEEM_SCRIPT,
+      [pairingKey(code)],
+      [shape, PAIRING_SHAPE_TRIES],
+    );
+    return requireLive(parsePairing(raw), now);
+  }
+
+  public async recordMiss(now: number): Promise<void> {
+    await this.redis.eval(MISS_SCRIPT, [missKey(now)], [PAIRING_MISS_WINDOW_MS * 2]);
+  }
+
+  public async recentMisses(now: number): Promise<number> {
+    return Number((await this.redis.get(missKey(now))) ?? 0) || 0;
   }
 
   public async remove(code: string): Promise<void> {
@@ -78,4 +117,8 @@ function parsePairing(value: unknown): PairingRecord {
 
 function pairingKey(code: string): string {
   return `${PAIRING_KEY_PREFIX}${code}`;
+}
+
+function missKey(now: number): string {
+  return `${PAIRING_MISS_KEY_PREFIX}${missWindowStart(now)}`;
 }

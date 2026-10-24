@@ -435,7 +435,7 @@ export function ReceiveFlow({ initialLocale }: { initialLocale?: SupportedLocale
 
       {stage === "code" && !checking ? (
         <>
-          {/* Two digits and a shape, rather than twelve characters read off
+          {/* Four digits and a shape, rather than twelve characters read off
               somebody else's screen. Scanning stays for whoever prefers it. */}
           <PairingEntry text={text} onTransferCode={startOpen} />
           <section className="drop-receive-alt">

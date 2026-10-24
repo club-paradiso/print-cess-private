@@ -122,6 +122,10 @@ export interface PairingStore {
   remove(code: string): Promise<void>;
   /** Deletes escrows that expired unredeemed, so a quiet deployment keeps no transfer codes. */
   pruneExpired(now: number): Promise<void>;
+  /** Counts one wrong guess against the service-wide budget for the current window. */
+  recordMiss(now: number): Promise<void>;
+  /** Wrong guesses, across every caller, in the current window. */
+  recentMisses(now: number): Promise<number>;
 }
 
 export type SignedBlobOperation = {

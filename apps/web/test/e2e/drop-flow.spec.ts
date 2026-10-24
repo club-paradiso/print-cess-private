@@ -272,7 +272,7 @@ test("keeps the transfer code out of request URLs", async ({ page }) => {
   }
 });
 
-test("consumes the pairing after one wrong shape", async ({ browser }) => {
+test("consumes the pairing after two wrong shapes", async ({ browser }) => {
   const sender = await browser.newContext();
   const receiver = await browser.newContext();
 
@@ -299,6 +299,12 @@ test("consumes the pairing after one wrong shape", async ({ browser }) => {
     for (const digit of shortCode) {
       await receiving.getByTestId(`pairing-key-${digit}`).click();
     }
+    await receiving.getByTestId("pairing-shape-triangle").click();
+    await expect(receiving.getByText(/numbers and shape|숫자와 도형/u)).toBeVisible();
+
+    for (const digit of shortCode) {
+      await receiving.getByTestId(`pairing-key-${digit}`).click();
+    }
     await receiving.getByTestId("pairing-shape-star").click();
     await expect(receiving.getByText(/numbers and shape|숫자와 도형/u)).toBeVisible();
     await expect(receiving.getByText(FILE_NAME)).toHaveCount(0);
@@ -308,11 +314,12 @@ test("consumes the pairing after one wrong shape", async ({ browser }) => {
   }
 });
 
-test("says so plainly when two digits match nothing", async ({ page }) => {
+test("says so plainly when four digits match nothing", async ({ page }) => {
   await page.goto("/receive");
   await waitForReceiveHydration(page);
-  await page.getByTestId("pairing-key-0").click();
-  await page.getByTestId("pairing-key-0").click();
+  for (let index = 0; index < 4; index += 1) {
+    await page.getByTestId("pairing-key-0").click();
+  }
   await page.getByTestId("pairing-shape-circle").click();
 
   await expect(page.getByText(/numbers and shape|숫자와 도형/u)).toBeVisible({

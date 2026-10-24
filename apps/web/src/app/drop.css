@@ -992,23 +992,24 @@
    forward action stays on screen, rows only speak when they have news, and
    the end of the visit is announced where the eye already is. */
 
+/* Four slots and their gaps fit a 320px screen inside the 16px gutters. */
 .pairing-entry--slots {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   margin: 4px 0;
   letter-spacing: 0;
 }
 .pairing-slot {
   display: grid;
   place-items: center;
-  width: clamp(64px, 20vw, 84px);
-  height: clamp(76px, 24vw, 96px);
+  width: clamp(56px, 17vw, 76px);
+  height: clamp(68px, 21vw, 88px);
   border: 2px solid var(--pc-border);
   border-radius: var(--pc-radius-lg);
   background: var(--pc-surface);
   color: var(--pc-text-primary);
-  font-size: clamp(40px, 13vw, 56px);
+  font-size: clamp(36px, 11vw, 52px);
   line-height: 1;
 }
 .pairing-slot.is-next {
