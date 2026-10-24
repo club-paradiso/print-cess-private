@@ -8,8 +8,8 @@ The main entry point is `/`, which shows the shared print screen plus direct Sen
 
 Two directions are supported:
 
-1. Phone to work computer: create a transfer on `/send` from the phone, then enter the two digits and shape it shows on `/receive` from the managed computer, or paste the transfer link there. Neither needs a camera.
-2. Work computer to phone: create a transfer on `/send` from the managed computer, then open it on the phone by QR code, the two digits and shape, or the transfer link.
+1. Phone to work computer: create a transfer on `/send` from the phone, then enter the four digits and shape it shows on `/receive` from the managed computer, or paste the transfer link there. Neither needs a camera.
+2. Work computer to phone: create a transfer on `/send` from the managed computer, then open it on the phone by QR code, the four digits and shape, or the transfer link.
 
 The actual main screen at `/` exposes Send, Receive, and Scan directly alongside the printing QR; it does not expose a redundant Workstation menu item. On `/start`, the optional environment diagnostics remain available for any device.
 
