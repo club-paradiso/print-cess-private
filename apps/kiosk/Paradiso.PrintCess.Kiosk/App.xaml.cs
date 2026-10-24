@@ -17,6 +17,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        HancomWorkspace.PurgeAbandoned();
 
         var localData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var journalPath = Path.Combine(localData, "Paradiso", "PrintCess", "print-journal");

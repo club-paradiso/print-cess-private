@@ -81,6 +81,11 @@ export class RailwayPostgresPairingStore implements PairingStore {
     await this.#executor.query(`DELETE FROM ${TABLE_NAME} WHERE code = $1`, [code]);
   }
 
+  public async pruneExpired(now: number): Promise<void> {
+    await this.ensureSchema();
+    await this.#executor.query(`DELETE FROM ${TABLE_NAME} WHERE expires_at <= $1`, [now]);
+  }
+
   private async ensureSchema(): Promise<void> {
     this.#schema ??= (async () => {
       await this.#executor.query(`

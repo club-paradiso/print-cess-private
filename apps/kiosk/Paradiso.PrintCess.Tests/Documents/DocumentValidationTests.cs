@@ -71,6 +71,12 @@ public sealed class DocumentValidationTests
                 DocumentKind.Hwp,
                 null,
                 TestDocuments.SessionId));
+        AssertError(DocumentValidationError.UnsafeHwpContent, () =>
+            _validator.Validate(
+                HwpTestDocuments.Valid(includeScriptStream: true, scriptStreamName: "SCRIPTS"),
+                DocumentKind.Hwp,
+                null,
+                TestDocuments.SessionId));
     }
 
     [Fact]

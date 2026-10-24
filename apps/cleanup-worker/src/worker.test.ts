@@ -31,14 +31,40 @@ describe("sweepOnce", () => {
   it("returns normalized counts on a 2xx response", async () => {
     const deps = stubDeps({
       fetchImpl: async () =>
-        jsonResponse(200, { attempted: 3, deleted: 2, deferred: 1, failed: 0, extra: "ignored" }),
+        jsonResponse(200, {
+          attempted: 3,
+          deleted: 2,
+          deferred: 1,
+          failed: 0,
+          drops: { attempted: 5, deleted: 4, failed: 1 },
+          extra: "ignored",
+        }),
     });
     const outcome = await sweepOnce(baseConfig(), deps);
     expect(outcome).toEqual({
       ok: true,
       status: 200,
-      counts: { attempted: 3, deleted: 2, deferred: 1, failed: 0 },
+      counts: {
+        attempted: 3,
+        deleted: 2,
+        deferred: 1,
+        failed: 0,
+        dropsDeleted: 4,
+        dropsFailed: 1,
+      },
     });
+  });
+
+  it("does not follow a redirect with the secret attached", async () => {
+    let seen: RequestInit | undefined;
+    const deps = stubDeps({
+      fetchImpl: async (_url, init) => {
+        seen = init;
+        return jsonResponse(307, {});
+      },
+    });
+    expect(await sweepOnce(baseConfig(), deps)).toEqual({ ok: false, status: 307, reason: "http" });
+    expect(seen?.redirect).toBe("manual");
   });
 
   it("sends the worker secret header and sweep body", async () => {

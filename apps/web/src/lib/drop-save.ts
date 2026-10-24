@@ -331,7 +331,7 @@ async function openStagedSink(name: string, type: string): Promise<FileSink | nu
     async finish() {
       await staged.writable.close();
       const assembled = await staged.handle.getFile();
-      startDownload(new File([assembled], name, fileOptions(type)), name);
+      startDownload(new File([assembled], name, downloadOptions(type)), name);
       // Staging has served its purpose once the browser has had time to read
       // the object URL; decrypted bytes are not kept a moment longer.
       window.setTimeout(() => {
@@ -356,7 +356,7 @@ function memorySink(name: string, type: string): FileSink {
     async finish() {
       const parts = chunks.map((chunk) => toBuffer(chunk) as BlobPart);
       chunks = [];
-      startDownload(new File(parts, name, fileOptions(type)), name);
+      startDownload(new File(parts, name, downloadOptions(type)), name);
       return "downloadStarted";
     },
     async abort() {
@@ -453,6 +453,22 @@ function fileOptions(type: string): FilePropertyBag {
   const mediaType = safeMediaType(type);
   return mediaType ? { type: mediaType } : {};
 }
+
+/**
+ * The sender chooses the declared type. A browser that opens a download instead
+ * of saving it would run a same-origin `blob:` page for markup or script, so
+ * those types are handed over as opaque bytes; the file name keeps its
+ * extension either way.
+ */
+function downloadOptions(type: string): FilePropertyBag {
+  const options = fileOptions(type);
+  return options.type && ACTIVE_CONTENT_TYPE.test(options.type)
+    ? { type: "application/octet-stream" }
+    : options;
+}
+
+const ACTIVE_CONTENT_TYPE =
+  /^(?:text\/(?:html|xml|javascript|ecmascript)|image\/svg\+xml|application\/(?:[a-z0-9.+-]*\+)?xml|application\/(?:x-)?(?:javascript|ecmascript))$/iu;
 
 function startDownload(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);

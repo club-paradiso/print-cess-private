@@ -76,6 +76,7 @@ export async function POST(request: Request) {
       const now = Date.now();
       const result = await sweepDueOrphans(server, now, parsed.data.limit);
       const drops = await sweepExpiredDrops(server, now, parsed.data.limit);
+      await server.pairings.pruneExpired(now);
       return json({ ok: true, ...result, drops });
     }
 

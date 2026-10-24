@@ -39,6 +39,10 @@ export class MemoryPairingStore implements PairingStore {
     this.#pairings.delete(code);
   }
 
+  public async pruneExpired(now: number): Promise<void> {
+    this.prune(now);
+  }
+
   private prune(now: number): void {
     for (const [code, pairing] of this.#pairings) {
       if (pairing.expiresAt <= now) this.#pairings.delete(code);

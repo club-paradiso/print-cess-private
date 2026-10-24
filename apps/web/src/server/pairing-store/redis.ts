@@ -57,6 +57,9 @@ export class RedisPairingStore implements PairingStore {
   public async remove(code: string): Promise<void> {
     await this.redis.del(pairingKey(code));
   }
+
+  /** Every escrow key carries a PX expiry, so Redis has already removed it. */
+  public async pruneExpired(): Promise<void> {}
 }
 
 function parsePairing(value: unknown): PairingRecord {

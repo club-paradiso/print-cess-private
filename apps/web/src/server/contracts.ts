@@ -120,6 +120,8 @@ export interface PairingStore {
   get(code: string): Promise<PairingRecord | null>;
   redeem(code: string, shape: PairingRecord["shape"], now: number): Promise<PairingRecord>;
   remove(code: string): Promise<void>;
+  /** Deletes escrows that expired unredeemed, so a quiet deployment keeps no transfer codes. */
+  pruneExpired(now: number): Promise<void>;
 }
 
 export type SignedBlobOperation = {

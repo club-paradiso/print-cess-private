@@ -36,8 +36,12 @@ import { RailwayRedisSessionStore } from "./session-store/redis";
 import { UpstashSessionStore } from "./session-store/upstash";
 import { ServiceError } from "./errors";
 
-/** Retention past expiry, so a sweep still finds the parts it has to delete. */
-const DROP_RETENTION_MS = 10 * 60_000;
+/**
+ * Retention past expiry, so a sweep still finds the parts it has to delete.
+ * A successful sweep removes the record at once; this only bounds how long a
+ * stalled cleanup provider can be down before the part paths are forgotten.
+ */
+const DROP_RETENTION_MS = 24 * 60 * 60_000;
 
 export type ServerRuntime = {
   config: ServerConfig;
