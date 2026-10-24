@@ -7,7 +7,7 @@ import {
 
 import { ServiceError } from "@/server/errors";
 import { assertAllowedOrigin, errorResponse, json, readJson } from "@/server/http";
-import { pairingNotFound } from "@/server/pairing-store/transitions";
+import { PAIRING_GLOBAL_MISS_LIMIT, pairingNotFound } from "@/server/pairing-store/transitions";
 import { assertUnderRateLimit, enforceRateLimit } from "@/server/rate-limit";
 import { clientAddress } from "@/server/request-identity";
 import { getRuntime } from "@/server/runtime";
@@ -25,12 +25,25 @@ export async function POST(request: Request, context: { params: Promise<{ code: 
     enforceRateLimit(`pairing-redeem:${address}`, 120, 60_000);
     assertUnderRateLimit(`pairing-miss:${address}`, 5, 15 * 60_000);
 
+    // Per-address limits do not hold against many addresses or many instances,
+    // so wrong guesses are also budgeted across the whole service. Spending the
+    // budget pauses only this shortcut; QR and link hand-offs are unaffected.
+    const now = Date.now();
+    if ((await server.pairings.recentMisses(now)) >= PAIRING_GLOBAL_MISS_LIMIT) {
+      throw new ServiceError(
+        "rate_limited",
+        "Too many wrong numbers right now. Use the QR code or link, or try again in a minute.",
+        429,
+      );
+    }
+
     const body = await readJson(request, redeemPairingRequestSchema, 1024);
     let pairing: PairingRecord;
     try {
-      pairing = await server.pairings.redeem(code, body.shape, Date.now());
+      pairing = await server.pairings.redeem(code, body.shape, now);
     } catch (error) {
       if (error instanceof ServiceError && error.code === "not_found") {
+        await server.pairings.recordMiss(now);
         enforceRateLimit(`pairing-miss:${address}`, 5, 15 * 60_000);
       }
       throw error;

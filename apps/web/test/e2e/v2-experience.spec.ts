@@ -356,7 +356,7 @@ test("@viewport sending and receiving are two sides of one Share capability", as
   await page.getByRole("link", { name: "Receive files with a code" }).click();
   await expect(page).toHaveURL(/\/receive$/u);
   await expect(page.getByText("Share", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Type the two numbers" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Type the four numbers" })).toBeVisible();
   await expectNoSidewaysScroll(page);
   await expectAccessible(page);
 
@@ -378,7 +378,7 @@ test("a failed code offers to try again rather than an input that no longer exis
   });
   await expect(page.getByRole("button", { name: "Type the transfer code" })).toHaveCount(0);
   await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page.getByRole("heading", { name: "Type the two numbers" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Type the four numbers" })).toBeVisible();
 });
 
 test("the sender sees the other side's state above the code, and erasing comes last", async ({
