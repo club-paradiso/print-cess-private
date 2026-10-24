@@ -16,17 +16,17 @@ documents are prohibited.
 
 ## Environment discovered
 
-| Item                       | Observed or selected value                                             | Consequence                                                                                                            |
-| -------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Repository                 | Private `lucanomics/paradiso-print-cess`                               | No implementation is pushed directly to `main`.                                                                        |
-| Working branch             | Short-lived `agent/*` branches                                         | Readiness work enters protected `main` only through a PR with required checks.                                         |
-| Local host                 | macOS 15.6.1, arm64                                                    | WPF, Windows printer APIs, Shell Launcher, and a physical printer cannot be validated locally.                         |
-| Local Node.js              | 24.14.0                                                                | The repository and CI select Node.js 24.18.0; local results obtained on 24.14.0 are not equivalent to that CI lane.    |
-| Local pnpm                 | 11.9.0                                                                 | The repository pins pnpm 11.15.1 through `packageManager`.                                                             |
-| Local .NET SDK             | Workspace-local 8.0.423 (runtime 8.0.29), under ignored `work/`        | Portable tests and Windows cross-target compilation/publish run on macOS; Windows runtime and printer behavior do not. |
-| Vercel CLI/authentication  | Authenticated `lucanomics`; linked `club-paradiso/paradiso-print-cess` | Project root is `apps/web`; a provider-backed dedicated Preview exists, while automatic Git builds remain disabled.    |
-| Vercel/Upstash credentials | Vercel OIDC context only; no approved Blob store/Redis/QStash set      | Local adapters remain the executable baseline; the manual Preview provider gate cannot run yet.                        |
-| Physical printer           | Not attached to this macOS environment                                 | A GitHub Windows runner proves compilation and mock behavior, not driver, spooler, paper, or physical output behavior. |
+| Item                       | Observed or selected value                                        | Consequence                                                                                                            |
+| -------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Repository                 | `club-paradiso/print-cess`                                        | No implementation is pushed directly to `main`.                                                                        |
+| Working branch             | Short-lived `agent/*` branches                                    | Readiness work enters protected `main` only through a PR with required checks.                                         |
+| Local host                 | macOS 15.6.1, arm64                                               | WPF, Windows printer APIs, Shell Launcher, and a physical printer cannot be validated locally.                         |
+| Local Node.js              | 24.14.0                                                           | The repository and CI select Node.js 24.18.0; local results obtained on 24.14.0 are not equivalent to that CI lane.    |
+| Local pnpm                 | 11.9.0                                                            | The repository pins pnpm 11.15.1 through `packageManager`.                                                             |
+| Local .NET SDK             | Workspace-local 8.0.423 (runtime 8.0.29), under ignored `work/`   | Portable tests and Windows cross-target compilation/publish run on macOS; Windows runtime and printer behavior do not. |
+| Vercel CLI/authentication  | Authenticated owner; linked `club-paradiso/paradiso-print-cess`   | Project root is `apps/web`; a provider-backed dedicated Preview exists, while automatic Git builds remain disabled.    |
+| Vercel/Upstash credentials | Vercel OIDC context only; no approved Blob store/Redis/QStash set | Local adapters remain the executable baseline; the manual Preview provider gate cannot run yet.                        |
+| Physical printer           | Not attached to this macOS environment                            | A GitHub Windows runner proves compilation and mock behavior, not driver, spooler, paper, or physical output behavior. |
 
 ## Architectural decisions
 
@@ -150,7 +150,7 @@ macOS host cannot establish WPF runtime correctness.
 - `main` now requires strict PRs, current Web/Windows/dependency/Gitleaks checks, conversation
   resolution, linear history, and admin enforcement. GitHub environments restrict Preview to
   `main`, Production to `main`, and signing/Release to `v*` tags. Active ruleset `19197379`
-  restricts creation, update, and deletion of matching release tags to the current `lucanomics` user
+  restricts creation, update, and deletion of matching release tags to the repository owner
   bypass; independent review and migration to an institutional release role remain open. GitHub
   native secret scanning returned 422 and CodeQL setup returned 403 for this private personal
   repository; keep `ENABLE_CODEQL` unset until the repository has the required security entitlement

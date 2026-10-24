@@ -12,7 +12,7 @@ The workflow must be dispatched from the exact tag named by its input. It reject
 ref/input mismatch, tag/`github.sha` mismatch, or tag commit that is not reachable from protected
 `main`. GitHub additionally restricts the `windows-signing` and `github-release` environments to
 `v*` tag refs. Active repository ruleset `19197379` prevents other write actors from creating,
-moving, or deleting `v*` release tags; the current `lucanomics` user remains the sole bypass and
+moving, or deleting `v*` release tags; the repository owner remains the sole bypass and
 must be replaced by an approved institutional release role before Production.
 
 ## Protected environment contract
