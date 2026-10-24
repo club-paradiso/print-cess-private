@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Text;
 
 namespace Paradiso.PrintCess.Core.Documents;
 
@@ -74,6 +73,35 @@ internal static class HwpDocumentInspector
         return new DocumentProperties(null, null, null);
     }
 
-    private static bool ContainsUtf16DirectoryName(ReadOnlySpan<byte> content, string value) =>
-        content.IndexOf(Encoding.Unicode.GetBytes(value)) >= 0;
+    /// <summary>
+    /// Compound-file directory names compare case-insensitively, so a storage
+    /// named "SCRIPTS" is the same storage to Hancom as "Scripts".
+    /// </summary>
+    private static bool ContainsUtf16DirectoryName(ReadOnlySpan<byte> content, string value)
+    {
+        var length = value.Length * 2;
+        for (var offset = 0; offset + length <= content.Length; offset++)
+        {
+            if (MatchesUtf16IgnoreCase(content.Slice(offset, length), value))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool MatchesUtf16IgnoreCase(ReadOnlySpan<byte> candidate, string value)
+    {
+        for (var index = 0; index < value.Length; index++)
+        {
+            if (candidate[(index * 2) + 1] != 0 ||
+                char.ToUpperInvariant((char)candidate[index * 2]) != char.ToUpperInvariant(value[index]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

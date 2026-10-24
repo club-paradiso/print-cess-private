@@ -39,7 +39,7 @@ internal static class HancomHwpxRenderer
                 $"Register '{DefaultSecurityModuleName}' or set {SecurityModuleEnvironmentVariable} to the exact registered value name.");
         }
 
-        var directory = Path.Combine(Path.GetTempPath(), "PrintCess", Guid.NewGuid().ToString("N"));
+        var directory = Path.Combine(HancomWorkspace.WorkRoot, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(directory);
         var extension = kind == DocumentKind.Hwp ? "hwp" : "hwpx";
         var inputPath = Path.Combine(directory, $"document.{extension}");
@@ -132,7 +132,7 @@ internal static class HancomHwpxRenderer
             }
             catch
             {
-                // The application-owned cleanup job retries abandoned temporary directories.
+                // HancomWorkspace.PurgeAbandoned removes what is left on the next start.
             }
         }
     }

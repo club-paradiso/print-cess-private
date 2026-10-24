@@ -33,14 +33,7 @@ jobs:
       PROVIDER_CONFIRM_SYNTHETIC_ONLY: "true"
       PROVIDER_TEST_SUITE: ${{ inputs.suite }}
       PROVIDER_BASE_URL: ${{ vars.PROVIDER_BASE_URL }}
-      BLOB_STORE_ID: ${{ secrets.BLOB_STORE_ID }}
-      BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
       UPSTASH_DISABLE_TELEMETRY: "1"
-      QSTASH_TOKEN: ${{ secrets.QSTASH_TOKEN }}
-      QSTASH_CURRENT_SIGNING_KEY: ${{ secrets.QSTASH_CURRENT_SIGNING_KEY }}
-      QSTASH_NEXT_SIGNING_KEY: ${{ secrets.QSTASH_NEXT_SIGNING_KEY }}
       WORKFLOW_REF: ${{ github.ref }}
     steps:
       - name: Require protected main workflow ref
@@ -53,7 +46,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -65,5 +58,14 @@ jobs:
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
 
+      # Secrets reach only this step, not the setup actions or the install.
       - name: Run synthetic provider acceptance
+        env:
+          BLOB_STORE_ID: ${{ secrets.BLOB_STORE_ID }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          QSTASH_TOKEN: ${{ secrets.QSTASH_TOKEN }}
+          QSTASH_CURRENT_SIGNING_KEY: ${{ secrets.QSTASH_CURRENT_SIGNING_KEY }}
+          QSTASH_NEXT_SIGNING_KEY: ${{ secrets.QSTASH_NEXT_SIGNING_KEY }}
         run: pnpm test:provider

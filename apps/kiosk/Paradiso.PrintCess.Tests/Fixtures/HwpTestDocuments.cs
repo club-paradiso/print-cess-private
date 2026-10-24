@@ -5,7 +5,10 @@ namespace Paradiso.PrintCess.Tests.Fixtures;
 
 internal static class HwpTestDocuments
 {
-    public static byte[] Valid(uint properties = 0, bool includeScriptStream = false)
+    public static byte[] Valid(
+        uint properties = 0,
+        bool includeScriptStream = false,
+        string scriptStreamName = "Scripts")
     {
         var bytes = new byte[2048];
         new byte[] { 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1 }.CopyTo(bytes, 0);
@@ -19,7 +22,7 @@ internal static class HwpTestDocuments
         BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(1060, 4), properties);
         if (includeScriptStream)
         {
-            Encoding.Unicode.GetBytes("Scripts").CopyTo(bytes, 768);
+            Encoding.Unicode.GetBytes(scriptStreamName).CopyTo(bytes, 768);
         }
         return bytes;
     }

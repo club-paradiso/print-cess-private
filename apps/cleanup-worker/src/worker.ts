@@ -5,6 +5,8 @@ export type SweepCounts = {
   deleted: number;
   deferred: number;
   failed: number;
+  dropsDeleted: number;
+  dropsFailed: number;
 };
 
 export type SweepOutcome =
@@ -55,6 +57,8 @@ export async function sweepOnce(config: WorkerConfig, deps: WorkerDeps): Promise
       method: "POST",
       headers,
       body: JSON.stringify({ sweep: true, limit: config.batchSize }),
+      // A redirect would carry the secret headers to whatever host it names.
+      redirect: "manual",
       signal: controller.signal,
     });
     if (!response.ok) {
@@ -115,13 +119,20 @@ async function waitOrStop(ms: number, deps: WorkerDeps, signal: AbortSignal): Pr
   }
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
 function normalizeCounts(payload: unknown): SweepCounts {
-  const record = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
+  const record = asRecord(payload);
+  const drops = asRecord(record.drops);
   return {
     attempted: readCount(record.attempted),
     deleted: readCount(record.deleted),
     deferred: readCount(record.deferred),
     failed: readCount(record.failed),
+    dropsDeleted: readCount(drops.deleted),
+    dropsFailed: readCount(drops.failed),
   };
 }
 

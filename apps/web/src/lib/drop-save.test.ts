@@ -201,6 +201,23 @@ describe("the download fallback", () => {
     expect(createObjectURL).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    ["page.html", "text/html", "application/octet-stream"],
+    ["logo.svg", "image/svg+xml", "application/octet-stream"],
+    ["feed.xml", "application/atom+xml", "application/octet-stream"],
+    ["photo.jpg", "image/jpeg", "image/jpeg"],
+  ])("hands %s over as %s → %s", async (name, type, expected) => {
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => "blob:fake");
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+
+    const sink = await downloadTarget(4).open({ name, type });
+    await sink.write(new Uint8Array([1, 2, 3, 4]));
+    await sink.finish();
+    expect(createObjectURL.mock.calls[0]?.[0].type).toBe(expected);
+  });
+
   it("refuses a file too large to assemble in memory instead of crashing the tab", () => {
     // Without private origin storage the chunks and the blob built from them are
     // both live at once, so the real cost approaches twice the file size.

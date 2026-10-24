@@ -8,7 +8,9 @@ overrides:
   postcss: 8.5.23
   sharp: 0.35.5
   typescript: 5.9.3
-  undici@<6.28.1: 6.28.1
+  undici@<6.29.1: 6.29.1
+  vite@>=8.0.0 <8.1.6: 8.1.6
+  zod@<4.6.6: 4.6.7
 
 allowBuilds:
   esbuild: true
@@ -24,5 +26,5 @@ minimumReleaseAgeExclude:
   - nanoid@3.3.18
   - heic-to@1.5.2
   - postcss@8.5.23
-  - undici@6.28.1
+  - undici@6.29.1
   - jsdom@30.0.0
