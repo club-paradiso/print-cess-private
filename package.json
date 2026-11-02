@@ -29,9 +29,9 @@
     "fixtures": "pnpm --filter @print-cess/test-fixtures generate"
   },
   "devDependencies": {
-    "@types/node": "26.6.5",
+    "@types/node": "26.6.6",
     "eslint": "10.13.0",
-    "eslint-config-next": "16.4.2",
+    "eslint-config-next": "16.4.3",
     "prettier": "3.9.10",
     "turbo": "2.11.10",
     "typescript": "7.0.2"
