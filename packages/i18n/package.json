@@ -19,7 +19,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "i18next": "26.5.11"
+    "i18next": "26.7.2"
   },
   "devDependencies": {
     "vitest": "5.1.0"
