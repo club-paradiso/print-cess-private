@@ -629,7 +629,15 @@ export function BatchMobileFlow({
               </div>
             </>
           ) : (
-            <ol className="mobile-selected drop-file-list">
+            <ol
+              className={
+                documents.length > 8
+                  ? "mobile-selected drop-file-list mobile-selected--scrollable"
+                  : "mobile-selected drop-file-list"
+              }
+              tabIndex={documents.length > 8 ? 0 : undefined}
+              aria-label={formatBatchCopy(copy.selected, documents.length)}
+            >
               {documents.map(({ file, validated }, index) => (
                 <li key={`${file.name}-${file.size}-${file.lastModified}-${index}`}>
                   <FileRow file={file} text={text} detail={pagesDetail(validated, copy)} />
