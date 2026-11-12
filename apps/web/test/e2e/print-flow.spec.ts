@@ -172,10 +172,7 @@ test("thirty-one PDF documents are rejected before validation", async ({ page, c
   await expect(mobile.getByText(/up to 30 files at once/u)).toBeVisible();
 });
 
-test("a thirty-file mixed photo and PDF selection keeps its order", async ({
-  page,
-  context,
-}) => {
+test("a thirty-file mixed photo and PDF selection keeps its order", async ({ page, context }) => {
   test.setTimeout(120_000);
   const { mobile } = await openMobile(page, context);
   const pdf = Buffer.from(await createSyntheticPdf(1));
