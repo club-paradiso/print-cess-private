@@ -2,6 +2,7 @@ import {
   FILE_KIND_CODES,
   MAX_PRINT_BUNDLE_BYTES,
   MAX_PRINT_BUNDLE_FILES,
+  MAX_PRINT_BUNDLE_DOCUMENT_FILES,
   type PrintableFileKind,
 } from "./envelope.js";
 
@@ -27,6 +28,8 @@ export function encodePrintBundle(entries: readonly PrintBundleEntry[]): Uint8Ar
   if (entries.length < 1 || entries.length > MAX_PRINT_BUNDLE_FILES) {
     throw new PrintBundleError(`A print bundle must contain 1-${MAX_PRINT_BUNDLE_FILES} files`);
   }
+
+  assertBatchKinds(entries);
 
   let total = PRINT_BUNDLE_HEADER_BYTES;
   for (const entry of entries) {
@@ -96,6 +99,7 @@ export function decodePrintBundle(bytes: Uint8Array): PrintBundleEntry[] {
     }
 
     if (offset !== bytes.byteLength) throw new PrintBundleError("Print bundle has trailing bytes");
+    assertBatchKinds(entries);
     return entries;
   } catch (error) {
     for (const entry of entries) entry.bytes.fill(0);
@@ -119,6 +123,18 @@ export function printBundleEncodedBytes(entries: readonly { bytes: Uint8Array }[
 }
 
 export const printBundleEncodedSize = printBundleEncodedBytes;
+
+/** A larger photo allowance must not silently increase the document allowance. */
+function assertBatchKinds(entries: readonly { fileKind: PrintableFileKind }[]): void {
+  if (
+    entries.length > MAX_PRINT_BUNDLE_DOCUMENT_FILES &&
+    !entries.every((entry) => entry.fileKind === "jpeg" || entry.fileKind === "png")
+  ) {
+    throw new PrintBundleError(
+      `A print bundle with documents may contain at most ${MAX_PRINT_BUNDLE_DOCUMENT_FILES} files`,
+    );
+  }
+}
 
 function printableKindFromCode(code: number): PrintableFileKind {
   for (const [kind, value] of Object.entries(FILE_KIND_CODES)) {
