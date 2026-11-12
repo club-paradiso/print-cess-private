@@ -17,7 +17,6 @@ The public courtesy limit is 11 pages. The technical ceiling is 50 pages. Raisin
 - **Selecting 30 photos does not raise the public free-page allowance.** At 12–30 pages the phone explains that staff approval will be required, then sends the batch for the existing kiosk-side approval flow. The native renderer verifies the real page count and obtains staff authorization before submitting the entire job.
 - The system ceiling of 50 pages and the original PDF/Hancom rules stay unchanged. No client-provided quota override is trusted.
 
-
 ## Counting
 
 - PDFs use their parsed page count.
