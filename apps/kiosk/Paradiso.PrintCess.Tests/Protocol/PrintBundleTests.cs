@@ -46,26 +46,33 @@ public sealed class PrintBundleTests
     }
 
     [Fact]
-    public void ParseRejectsElevenDocumentsOrThirtyOnePhotos()
+    public void ParseAcceptsThirtyMixedDocumentsInOrder()
     {
-        var documents = Encode(Enumerable.Range(0, 11)
-            .Select(_ => (DocumentKind.Pdf, new byte[] { 1 }))
-            .ToArray());
-        Assert.Throws<EnvelopeFormatException>(() => PrintBundle.Parse(documents));
+        var kinds = new[] { DocumentKind.Pdf, DocumentKind.Jpeg, DocumentKind.Png, DocumentKind.Hwpx, DocumentKind.Hwp };
+        var originals = Enumerable.Range(0, 30)
+            .Select(index => (kinds[index % kinds.Length], new byte[] { checked((byte)index), 1 }))
+            .ToArray();
 
-        var photos = Encode(Enumerable.Range(0, 31)
-            .Select(_ => (DocumentKind.Jpeg, new byte[] { 1 }))
-            .ToArray());
-        Assert.Throws<EnvelopeFormatException>(() => PrintBundle.Parse(photos));
+        using var bundle = PrintBundle.Parse(Encode(originals));
+
+        Assert.Equal(30, bundle.Entries.Count);
+        for (var index = 0; index < originals.Length; index++)
+        {
+            Assert.Equal(originals[index].Item1, bundle.Entries[index].Kind);
+            Assert.Equal(originals[index].Item2, bundle.Entries[index].Bytes);
+        }
     }
 
     [Fact]
-    public void ParseRejectsThirtyMixedDocuments()
+    public void ParseRejectsThirtyOneDocumentsOrPhotos()
     {
-        var items = Enumerable.Range(0, 30)
-            .Select(index => (index == 29 ? DocumentKind.Pdf : DocumentKind.Png, new byte[] { 1 }))
-            .ToArray();
-        Assert.Throws<EnvelopeFormatException>(() => PrintBundle.Parse(Encode(items)));
+        foreach (var kind in new[] { DocumentKind.Pdf, DocumentKind.Jpeg })
+        {
+            var encoded = Encode(Enumerable.Range(0, 31)
+                .Select(_ => (kind, new byte[] { 1 }))
+                .ToArray());
+            Assert.Throws<EnvelopeFormatException>(() => PrintBundle.Parse(encoded));
+        }
     }
 
     private static byte[] Encode(params (DocumentKind Kind, byte[] Bytes)[] items)
