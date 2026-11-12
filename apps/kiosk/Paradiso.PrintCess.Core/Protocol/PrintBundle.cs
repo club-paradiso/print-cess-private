@@ -88,6 +88,13 @@ public sealed class PrintBundle : IDisposable
             {
                 throw new EnvelopeFormatException("Print bundle has trailing data.");
             }
+            // The thirty-file allowance is only for photos. This check happens
+            // again in the native trust boundary, never just on the phone.
+            if (count > BinaryEnvelope.MaxBundleDocumentFiles &&
+                entries.Exists(entry => entry.Kind is not (DocumentKind.Jpeg or DocumentKind.Png)))
+            {
+                throw new EnvelopeFormatException("A batch with documents may contain at most ten files.");
+            }
             return new PrintBundle(entries);
         }
         catch
