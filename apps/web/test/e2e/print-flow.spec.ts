@@ -151,6 +151,8 @@ test("thirty PDF documents are accepted, ordered, and require staff approval", a
   });
   const listed = mobile.locator("ol.mobile-selected > li");
   await expect(listed).toHaveCount(30);
+  await expect(mobile.locator("ol.mobile-selected")).toHaveCSS("overflow-y", "auto");
+  await expect(mobile.locator("ol.mobile-selected")).toHaveAttribute("tabindex", "0");
   await expect(listed.first()).toContainText("01-document.pdf");
   await expect(listed.last()).toContainText("30-document.pdf");
   await expect(mobile.getByRole("button", { name: "Print 30 files" })).toBeVisible();
