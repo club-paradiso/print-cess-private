@@ -344,9 +344,7 @@ async function consumeValidateAndPrint(
       // This browser-based kiosk has no trusted staff authenticator. Do not
       // let a larger photo selection bypass the existing courtesy policy.
       // The native Windows kiosk can request staff approval for 12–50 pages.
-      const quota = decidePrintQuota(
-        pageCounts.map((pages) => ({ pages, exact: true })),
-      );
+      const quota = decidePrintQuota(pageCounts.map((pages) => ({ pages, exact: true })));
       if (quota.kind !== "allowed") throw new Error("Staff approval requires the Windows kiosk");
     } catch (error) {
       for (const artifact of nextArtifacts) revokePrintArtifact(artifact);
