@@ -34,7 +34,6 @@ import { LOCALE_NAMES, SUPPORTED_LOCALES, type SupportedLocale } from "@print-ce
 import {
   MAX_PRINT_BUNDLE_BYTES,
   MAX_PRINT_BUNDLE_FILES,
-  MAX_PRINT_BUNDLE_DOCUMENT_FILES,
   MAX_PLAINTEXT_BYTES,
   PRINT_BUNDLE_ENTRY_HEADER_BYTES,
   PRINT_BUNDLE_HEADER_BYTES,
@@ -297,37 +296,44 @@ export function BatchMobileFlow({
       setBatchError(undefined);
       setFileNoticeKey(undefined);
       setQuotaBlock(undefined);
-      const photoSelection = files.every((file) => classifySelectedFile(file) === "image");
-      const maximumFiles = photoSelection
-        ? MAX_PRINT_BUNDLE_FILES
-        : MAX_PRINT_BUNDLE_DOCUMENT_FILES;
-      if (files.length > maximumFiles) {
+      if (files.length > MAX_PRINT_BUNDLE_FILES) {
         resetPickers();
-        setBatchError(photoSelection ? copy.tooManyPhotos : copy.tooManyFiles);
+        setBatchError(copy.tooManyFiles);
         return;
       }
 
-      // Keep the existing 32 MiB authenticated envelope. Photo-only batches
-      // automatically shrink oversized images before bundling, one at a time.
-      const batchPhotoBytes =
-        photoSelection && files.length > 1
+      // Keep the existing 32 MiB authenticated envelope. Budget images from
+      // what remains after accounting for PDFs and Hangul files, including
+      // mixed selections. Originals stay on the visitor's phone.
+      const imageCount = files.filter((file) => classifySelectedFile(file) === "image").length;
+      const documentBytes = files
+        .filter((file) => classifySelectedFile(file) !== "image")
+        .reduce((sum, file) => sum + file.size, 0);
+      const photoBudgetBytes =
+        imageCount > 0 && files.length > 1
           ? Math.min(
               MAX_PLAINTEXT_BYTES,
               Math.floor(
                 (MAX_PRINT_BUNDLE_BYTES -
                   PRINT_BUNDLE_HEADER_BYTES -
-                  PRINT_BUNDLE_ENTRY_HEADER_BYTES * files.length) /
-                  files.length,
+                  PRINT_BUNDLE_ENTRY_HEADER_BYTES * files.length -
+                  documentBytes) /
+                  imageCount,
               ),
             )
           : undefined;
+      if (documentBytes > MAX_PRINT_BUNDLE_BYTES || (photoBudgetBytes !== undefined && photoBudgetBytes < 1)) {
+        resetPickers();
+        setBatchError(copy.batchTooLarge);
+        return;
+      }
       const next: SelectedDocument[] = [];
       try {
         for (const file of files) {
           const validated = await validateMobileDocument(file, {
             allowHwp: supportsHwp,
             allowHwpx: supportsHwpx,
-            ...(batchPhotoBytes === undefined ? {} : { batchPhotoBytes }),
+            ...(photoBudgetBytes === undefined ? {} : { batchPhotoBytes: photoBudgetBytes }),
           });
           next.push({ file, validated });
         }
@@ -338,20 +344,10 @@ export function BatchMobileFlow({
         ) {
           throw new BatchSelectionError(copy.batchTooLarge);
         }
-        // Keep the existing eleven-page courtesy policy. Larger photo batches
-        // can still proceed to the native kiosk's staff authorization prompt;
-        // the phone cannot grant an override or bypass the kiosk check.
-        const photoOnly = next.every(
-          ({ validated }) => validated.fileKind === "jpeg" || validated.fileKind === "png",
-        );
-        if (next.length > MAX_PRINT_BUNDLE_DOCUMENT_FILES && !photoOnly) {
-          throw new BatchSelectionError(copy.tooManyFiles);
-        }
+        // The eleven-page courtesy policy still applies to photos, PDFs and
+        // mixed print jobs. The native Windows kiosk alone may authorize more.
         const quota = decidePrintQuota(next.map(({ validated }) => quotaDocument(validated)));
-        if (
-          quota.kind === "hardLimitExceeded" ||
-          (quota.kind === "staffOverrideRequired" && !photoOnly)
-        ) {
+        if (quota.kind === "hardLimitExceeded") {
           for (const item of next) item.validated.bytes.fill(0);
           resetPickers();
           setQuotaBlock(quota);
@@ -372,7 +368,6 @@ export function BatchMobileFlow({
       clearDocuments,
       copy.batchTooLarge,
       copy.tooManyFiles,
-      copy.tooManyPhotos,
       resetPickers,
       supportsHwp,
       supportsHwpx,
