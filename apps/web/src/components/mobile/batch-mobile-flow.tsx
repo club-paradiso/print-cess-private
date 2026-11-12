@@ -344,6 +344,9 @@ export function BatchMobileFlow({
         const photoOnly = next.every(
           ({ validated }) => validated.fileKind === "jpeg" || validated.fileKind === "png",
         );
+        if (next.length > MAX_PRINT_BUNDLE_DOCUMENT_FILES && !photoOnly) {
+          throw new BatchSelectionError(copy.tooManyFiles);
+        }
         const quota = decidePrintQuota(next.map(({ validated }) => quotaDocument(validated)));
         if (
           quota.kind === "hardLimitExceeded" ||
