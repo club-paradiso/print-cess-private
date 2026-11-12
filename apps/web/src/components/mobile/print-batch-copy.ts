@@ -41,12 +41,14 @@ const COPY: Record<SupportedLocale, PrintBatchCopy> = {
     selected: "{{count}} files selected",
     tooManyFiles: "You can print up to 10 files at once. Pick fewer files.",
     tooManyPhotos: "You can select up to 30 photos at once. Pick fewer photos.",
-    staffApprovalNotice: "Printing more than 11 pages requires staff approval at the kiosk. Your photos will not print until staff approve.",
+    staffApprovalNotice:
+      "Printing more than 11 pages requires staff approval at the kiosk. Your photos will not print until staff approve.",
     batchTooLarge: "These files are too large together. Keep the whole print job under 32 MB.",
     guideChooseTitle: "2. Pick your files",
     guideChooseBody: "Choose up to 30 photos or 10 PDF documents from your phone.",
     guideChooseBodyHancom: "Choose up to 30 photos or 10 supported PDF/HWP/HWPX documents.",
-    helpFile: "Select up to 30 photos at once, or up to 10 other files. Photos beyond 11 pages require staff approval.",
+    helpFile:
+      "Select up to 30 photos at once, or up to 10 other files. Photos beyond 11 pages require staff approval.",
     helpPreview:
       "Check the list. The files print once each in this order, then tap the print button.",
     pages: "{{count}} pages",
@@ -70,12 +72,15 @@ const COPY: Record<SupportedLocale, PrintBatchCopy> = {
     selected: "파일 {{count}}개를 골랐어요",
     tooManyFiles: "한 번에 10개까지 인쇄할 수 있어요. 파일 수를 줄여 주세요.",
     tooManyPhotos: "사진은 한 번에 최대 30장까지 선택할 수 있어요. 장수를 줄여 주세요.",
-    staffApprovalNotice: "11쪽을 넘는 인쇄는 키오스크에서 직원 승인이 필요해요. 승인 전에는 사진이 인쇄되지 않아요.",
+    staffApprovalNotice:
+      "11쪽을 넘는 인쇄는 키오스크에서 직원 승인이 필요해요. 승인 전에는 사진이 인쇄되지 않아요.",
     batchTooLarge: "고른 파일이 모두 합쳐 너무 커요. 한 번에 32MB 이하로 골라 주세요.",
     guideChooseTitle: "2. 파일 고르기",
     guideChooseBody: "휴대전화에서 사진은 30장까지, PDF 문서는 10개까지 고를 수 있어요.",
-    guideChooseBodyHancom: "휴대전화에서 사진은 30장까지, PDF·HWP/HWPX 문서는 10개까지 고를 수 있어요.",
-    helpFile: "사진은 한 번에 최대 30장, 다른 파일은 최대 10개까지 고를 수 있어요. 11쪽을 넘으면 직원 승인이 필요해요.",
+    guideChooseBodyHancom:
+      "휴대전화에서 사진은 30장까지, PDF·HWP/HWPX 문서는 10개까지 고를 수 있어요.",
+    helpFile:
+      "사진은 한 번에 최대 30장, 다른 파일은 최대 10개까지 고를 수 있어요. 11쪽을 넘으면 직원 승인이 필요해요.",
     helpPreview: "목록과 순서를 확인하세요. 한 부씩 인쇄돼요. 맞으면 인쇄 버튼을 누르세요.",
     pages: "{{count}}페이지",
     photosHint: "갤러리·카메라로 찍은 사진",
@@ -126,12 +131,14 @@ const COPY: Record<SupportedLocale, PrintBatchCopy> = {
     selected: "{{count}} file dipilih",
     tooManyFiles: "Maksimal 10 file dapat dicetak sekaligus. Pilih lebih sedikit file.",
     tooManyPhotos: "Maksimal 30 foto dalam satu pencetakan. Kurangi jumlah foto.",
-    staffApprovalNotice: "Cetakan lebih dari 11 halaman memerlukan persetujuan petugas di kios. Tidak ada foto yang dicetak sebelum disetujui.",
+    staffApprovalNotice:
+      "Cetakan lebih dari 11 halaman memerlukan persetujuan petugas di kios. Tidak ada foto yang dicetak sebelum disetujui.",
     batchTooLarge: "Total file terlalu besar. Batasi satu pekerjaan cetak hingga 32 MB.",
     guideChooseTitle: "2. Pilih file",
     guideChooseBody: "Pilih hingga 30 foto atau 10 dokumen PDF dari ponsel.",
     guideChooseBodyHancom: "Pilih hingga 30 foto atau 10 dokumen PDF/HWP/HWPX yang didukung.",
-    helpFile: "Pilih maksimal 30 foto atau 10 berkas lain. Lebih dari 11 halaman perlu persetujuan petugas.",
+    helpFile:
+      "Pilih maksimal 30 foto atau 10 berkas lain. Lebih dari 11 halaman perlu persetujuan petugas.",
     helpPreview:
       "Periksa daftar dan urutannya. Setiap file dicetak sekali, lalu ketuk tombol cetak.",
     pages: "{{count}} halaman",
@@ -155,13 +162,16 @@ const COPY: Record<SupportedLocale, PrintBatchCopy> = {
     selected: "{{count}} file ang napili",
     tooManyFiles: "Hanggang 10 file lang ang maaaring i-print nang sabay. Bawasan ang mga file.",
     tooManyPhotos: "Hanggang 30 larawan lang bawat pag-print. Bawasan ang bilang.",
-    staffApprovalNotice: "Ang pag-print ng higit 11 pahina ay dapat aprubahan ng staff sa kiosk. Hindi magpi-print bago ito maaprubahan.",
+    staffApprovalNotice:
+      "Ang pag-print ng higit 11 pahina ay dapat aprubahan ng staff sa kiosk. Hindi magpi-print bago ito maaprubahan.",
     batchTooLarge:
       "Masyadong malaki ang kabuuang file. Panatilihin sa ilalim ng 32 MB ang isang print job.",
     guideChooseTitle: "2. Piliin ang mga file",
     guideChooseBody: "Pumili ng hanggang 30 larawan o 10 PDF mula sa telepono.",
-    guideChooseBodyHancom: "Pumili ng hanggang 30 larawan o 10 suportadong PDF/HWP/HWPX na dokumento.",
-    helpFile: "Hanggang 30 larawan o 10 iba pang file. Kailangan ng pag-apruba ng staff kapag lampas 11 pahina.",
+    guideChooseBodyHancom:
+      "Pumili ng hanggang 30 larawan o 10 suportadong PDF/HWP/HWPX na dokumento.",
+    helpFile:
+      "Hanggang 30 larawan o 10 iba pang file. Kailangan ng pag-apruba ng staff kapag lampas 11 pahina.",
     helpPreview:
       "Suriin ang listahan at ayos. Tig-iisang kopya ang ipi-print, saka pindutin ang print.",
     pages: "{{count}} pahina",
@@ -185,7 +195,8 @@ const COPY: Record<SupportedLocale, PrintBatchCopy> = {
     selected: "Đã chọn {{count}} tệp",
     tooManyFiles: "Mỗi lần chỉ có thể in tối đa 10 tệp. Hãy chọn ít tệp hơn.",
     tooManyPhotos: "Mỗi lần chỉ được chọn tối đa 30 ảnh. Hãy giảm số lượng.",
-    staffApprovalNotice: "In hơn 11 trang cần nhân viên phê duyệt tại ki-ốt. Ảnh sẽ không in trước khi được phê duyệt.",
+    staffApprovalNotice:
+      "In hơn 11 trang cần nhân viên phê duyệt tại ki-ốt. Ảnh sẽ không in trước khi được phê duyệt.",
     batchTooLarge: "Tổng dung lượng các tệp quá lớn. Một lần in phải dưới 32 MB.",
     guideChooseTitle: "2. Chọn tệp",
     guideChooseBody: "Chọn tối đa 30 ảnh hoặc 10 tài liệu PDF từ điện thoại.",
@@ -298,7 +309,8 @@ const COPY: Record<SupportedLocale, PrintBatchCopy> = {
     selected: "تم تحديد {{count}} ملفات",
     tooManyFiles: "يمكن طباعة 10 ملفات كحد أقصى في المرة الواحدة. اختر ملفات أقل.",
     tooManyPhotos: "يمكن اختيار 30 صورة كحد أقصى دفعة واحدة. قلّل العدد.",
-    staffApprovalNotice: "طباعة أكثر من 11 صفحة تتطلب موافقة الموظف عند جهاز الطباعة. لن تبدأ الطباعة قبل الموافقة.",
+    staffApprovalNotice:
+      "طباعة أكثر من 11 صفحة تتطلب موافقة الموظف عند جهاز الطباعة. لن تبدأ الطباعة قبل الموافقة.",
     batchTooLarge: "الحجم الإجمالي للملفات كبير جدًا. اجعل مهمة الطباعة أقل من 32 MB.",
     guideChooseTitle: "2. اختر الملفات",
     guideChooseBody: "اختر حتى 30 صورة أو 10 مستندات PDF من هاتفك.",
@@ -326,12 +338,15 @@ const COPY: Record<SupportedLocale, PrintBatchCopy> = {
     selected: "Выбрано файлов: {{count}}",
     tooManyFiles: "За один раз можно напечатать не более 10 файлов. Выберите меньше файлов.",
     tooManyPhotos: "За раз можно выбрать максимум 30 фотографий. Уменьшите количество.",
-    staffApprovalNotice: "Для печати более 11 страниц требуется одобрение сотрудника у киоска. До одобрения печать не начнётся.",
+    staffApprovalNotice:
+      "Для печати более 11 страниц требуется одобрение сотрудника у киоска. До одобрения печать не начнётся.",
     batchTooLarge: "Общий размер файлов слишком велик. Одна печать должна быть меньше 32 МБ.",
     guideChooseTitle: "2. Выберите файлы",
     guideChooseBody: "Выберите на телефоне до 30 фотографий или 10 PDF-документов.",
-    guideChooseBodyHancom: "Выберите до 30 фотографий или 10 поддерживаемых PDF/HWP/HWPX-документов.",
-    helpFile: "За раз до 30 фотографий либо 10 других файлов. Свыше 11 страниц требуется разрешение сотрудника.",
+    guideChooseBodyHancom:
+      "Выберите до 30 фотографий или 10 поддерживаемых PDF/HWP/HWPX-документов.",
+    helpFile:
+      "За раз до 30 фотографий либо 10 других файлов. Свыше 11 страниц требуется разрешение сотрудника.",
     helpPreview:
       "Проверьте список и порядок. Каждый файл печатается один раз, затем нажмите кнопку печати.",
     pages: "Страниц: {{count}}",
@@ -355,12 +370,15 @@ const COPY: Record<SupportedLocale, PrintBatchCopy> = {
     selected: "{{count}} файл сонгосон",
     tooManyFiles: "Нэг удаад хамгийн ихдээ 10 файл хэвлэнэ. Файлын тоог багасгана уу.",
     tooManyPhotos: "Нэг удаад 30 хүртэл зураг сонгоно. Зургийн тоог багасгана уу.",
-    staffApprovalNotice: "11-ээс олон хуудас хэвлэхэд киоск дээр ажилтны зөвшөөрөл шаардлагатай. Зөвшөөрөхөөс өмнө хэвлэхгүй.",
+    staffApprovalNotice:
+      "11-ээс олон хуудас хэвлэхэд киоск дээр ажилтны зөвшөөрөл шаардлагатай. Зөвшөөрөхөөс өмнө хэвлэхгүй.",
     batchTooLarge: "Файлуудын нийт хэмжээ хэт их байна. Нэг хэвлэлтийг 32 MB-аас бага байлгана уу.",
     guideChooseTitle: "2. Файлуудаа сонгоно уу",
     guideChooseBody: "Утаснаасаа 30 хүртэл зураг эсвэл 10 PDF баримт сонгоно уу.",
-    guideChooseBodyHancom: "Утаснаасаа 30 хүртэл зураг эсвэл 10 дэмжигдсэн PDF/HWP/HWPX баримт сонгоно уу.",
-    helpFile: "30 хүртэл зураг эсвэл 10 өөр файл сонгоно уу. 11-ээс олон хуудсанд ажилтны зөвшөөрөл шаардлагатай.",
+    guideChooseBodyHancom:
+      "Утаснаасаа 30 хүртэл зураг эсвэл 10 дэмжигдсэн PDF/HWP/HWPX баримт сонгоно уу.",
+    helpFile:
+      "30 хүртэл зураг эсвэл 10 өөр файл сонгоно уу. 11-ээс олон хуудсанд ажилтны зөвшөөрөл шаардлагатай.",
     helpPreview:
       "Жагсаалт ба дарааллыг шалгана уу. Файл бүр 1 удаа хэвлэгдэнэ, дараа нь хэвлэх товчийг дарна уу.",
     pages: "{{count}} хуудас",
@@ -384,12 +402,14 @@ const COPY: Record<SupportedLocale, PrintBatchCopy> = {
     selected: "Вибрано файлів: {{count}}",
     tooManyFiles: "За один раз можна надрукувати не більше 10 файлів. Виберіть менше файлів.",
     tooManyPhotos: "За один раз можна вибрати максимум 30 фото. Зменште кількість.",
-    staffApprovalNotice: "Для друку понад 11 сторінок потрібен дозвіл працівника біля кіоску. До отримання дозволу друк не почнеться.",
+    staffApprovalNotice:
+      "Для друку понад 11 сторінок потрібен дозвіл працівника біля кіоску. До отримання дозволу друк не почнеться.",
     batchTooLarge: "Загальний розмір файлів завеликий. Одне завдання друку має бути менше 32 МБ.",
     guideChooseTitle: "2. Виберіть файли",
     guideChooseBody: "Виберіть на телефоні до 30 фото або 10 PDF-документів.",
     guideChooseBodyHancom: "Виберіть до 30 фото або 10 підтримуваних PDF/HWP/HWPX-документів.",
-    helpFile: "За один раз до 30 фото або 10 інших файлів. Понад 11 сторінок потребують дозволу працівника.",
+    helpFile:
+      "За один раз до 30 фото або 10 інших файлів. Понад 11 сторінок потребують дозволу працівника.",
     helpPreview:
       "Перевірте список і порядок. Кожен файл друкується один раз, потім натисніть кнопку друку.",
     pages: "Сторінок: {{count}}",
