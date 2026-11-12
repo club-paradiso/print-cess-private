@@ -29,6 +29,42 @@ describe("print bundle", () => {
     );
   });
 
+  it("round-trips thirty photos in their original order", () => {
+    const photos = Array.from({ length: 30 }, (_, index) => ({
+      fileKind: "jpeg" as const,
+      bytes: new Uint8Array([0xff, 0xd8, index]),
+    }));
+    const encoded = encodePrintBundle(photos);
+    expect(decodePrintBundle(encoded)).toEqual(photos);
+    expect(MAX_PRINT_BUNDLE_FILES).toBe(30);
+  });
+
+  it("rejects more than ten documents, including mixed thirty-file batches", () => {
+    const documents = Array.from({ length: 11 }, () => ({
+      fileKind: "pdf" as const,
+      bytes: new Uint8Array([1]),
+    }));
+    expect(() => encodePrintBundle(documents)).toThrow(PrintBundleError);
+    const images = Array.from({ length: 29 }, () => ({
+      fileKind: "png" as const,
+      bytes: new Uint8Array([1]),
+    }));
+    expect(() =>
+      encodePrintBundle([...images, { fileKind: "pdf", bytes: new Uint8Array([1]) }]),
+    ).toThrow(PrintBundleError);
+  });
+
+  it("rejects an altered thirty-photo bundle containing a document on decode", () => {
+    const encoded = encodePrintBundle(
+      Array.from({ length: 30 }, () => ({
+        fileKind: "png" as const,
+        bytes: new Uint8Array([1]),
+      })),
+    );
+    encoded[12] = 1; // change first entry to PDF after encoding
+    expect(() => decodePrintBundle(encoded)).toThrow(PrintBundleError);
+  });
+
   it("rejects more than the bounded file count", () => {
     expect(() =>
       encodePrintBundle(
