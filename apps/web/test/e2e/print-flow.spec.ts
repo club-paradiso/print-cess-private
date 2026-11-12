@@ -94,6 +94,60 @@ async function recordPickerCalls(kiosk: Page): Promise<() => Promise<string[]>> 
     );
 }
 
+test("a photo-only selection accepts thirty images and explains staff approval", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(120_000);
+  const { mobile } = await openMobile(page, context);
+  const photo = Buffer.from(await createSyntheticJpeg(800, 1100));
+  const inputs = Array.from({ length: 30 }, (_, index) => ({
+    name: `${String(index + 1).padStart(2, "0")}-photo.jpg`,
+    mimeType: "image/jpeg",
+    buffer: photo,
+  }));
+  await mobile.getByTestId("photo-input").setInputFiles(inputs);
+  await expect(mobile.getByRole("heading", { name: "Check these files" })).toBeVisible({
+    timeout: 90_000,
+  });
+  const listed = mobile.locator("ol.mobile-selected > li");
+  await expect(listed).toHaveCount(30);
+  await expect(listed.first()).toContainText("01-photo.jpg");
+  await expect(listed.last()).toContainText("30-photo.jpg");
+  await expect(mobile.getByRole("button", { name: "Print 30 files" })).toBeVisible();
+  await expect(mobile.getByText(/requires staff approval at the kiosk/u)).toBeVisible();
+});
+
+test("thirty-one photos are rejected before validation", async ({ page, context }) => {
+  const { mobile } = await openMobile(page, context);
+  const photo = Buffer.from(await createSyntheticJpeg(240, 320));
+  await mobile.getByTestId("photo-input").setInputFiles(
+    Array.from({ length: 31 }, (_, index) => ({
+      name: `photo-${index}.jpg`,
+      mimeType: "image/jpeg",
+      buffer: photo,
+    })),
+  );
+  await expect(mobile.getByText(/up to 30 photos at once/u)).toBeVisible();
+  await expect(mobile.getByRole("button", { name: "Print 31 files" })).toHaveCount(0);
+});
+
+test("eleven documents are rejected even though photos can reach thirty", async ({
+  page,
+  context,
+}) => {
+  const { mobile } = await openMobile(page, context);
+  const pdf = Buffer.from(await createSyntheticPdf(1));
+  await mobile.getByTestId("file-input").setInputFiles(
+    Array.from({ length: 11 }, (_, index) => ({
+      name: `document-${index}.pdf`,
+      mimeType: "application/pdf",
+      buffer: pdf,
+    })),
+  );
+  await expect(mobile.getByText(/up to 10 files at once/u)).toBeVisible();
+});
+
 test("one kiosk scan prints multiple selected photos in order", async ({ page, context }) => {
   const pickerCalls = await recordPickerCalls(page);
   const { mobile } = await openMobile(page, context, "/kiosk?printing=auto");
