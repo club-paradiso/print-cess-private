@@ -115,7 +115,7 @@ test("a photo-only selection accepts thirty images and explains staff approval",
   await expect(listed.first()).toContainText("01-photo.jpg");
   await expect(listed.last()).toContainText("30-photo.jpg");
   await expect(mobile.getByRole("button", { name: "Print 30 files" })).toBeVisible();
-  await expect(mobile.getByText(/requires staff approval at the kiosk/u)).toBeVisible();
+  await expect(mobile.getByText(/requires staff approval at the Windows kiosk/u)).toBeVisible();
 });
 
 test("thirty-one photos are rejected before validation", async ({ page, context }) => {
@@ -128,24 +128,70 @@ test("thirty-one photos are rejected before validation", async ({ page, context 
       buffer: photo,
     })),
   );
-  await expect(mobile.getByText(/up to 30 photos at once/u)).toBeVisible();
+  await expect(mobile.getByText(/up to 30 files at once/u)).toBeVisible();
   await expect(mobile.getByRole("button", { name: "Print 31 files" })).toHaveCount(0);
 });
 
-test("eleven documents are rejected even though photos can reach thirty", async ({
+test("thirty PDF documents are accepted, ordered, and require staff approval", async ({
   page,
   context,
 }) => {
+  test.setTimeout(120_000);
   const { mobile } = await openMobile(page, context);
   const pdf = Buffer.from(await createSyntheticPdf(1));
   await mobile.getByTestId("file-input").setInputFiles(
-    Array.from({ length: 11 }, (_, index) => ({
+    Array.from({ length: 30 }, (_, index) => ({
+      name: `${String(index + 1).padStart(2, "0")}-document.pdf`,
+      mimeType: "application/pdf",
+      buffer: pdf,
+    })),
+  );
+  await expect(mobile.getByRole("heading", { name: "Check these files" })).toBeVisible({
+    timeout: 90_000,
+  });
+  const listed = mobile.locator("ol.mobile-selected > li");
+  await expect(listed).toHaveCount(30);
+  await expect(listed.first()).toContainText("01-document.pdf");
+  await expect(listed.last()).toContainText("30-document.pdf");
+  await expect(mobile.getByRole("button", { name: "Print 30 files" })).toBeVisible();
+  await expect(mobile.getByText(/requires staff approval at the Windows kiosk/u)).toBeVisible();
+});
+
+test("thirty-one PDF documents are rejected before validation", async ({ page, context }) => {
+  const { mobile } = await openMobile(page, context);
+  const pdf = Buffer.from(await createSyntheticPdf(1));
+  await mobile.getByTestId("file-input").setInputFiles(
+    Array.from({ length: 31 }, (_, index) => ({
       name: `document-${index}.pdf`,
       mimeType: "application/pdf",
       buffer: pdf,
     })),
   );
-  await expect(mobile.getByText(/up to 10 files at once/u)).toBeVisible();
+  await expect(mobile.getByText(/up to 30 files at once/u)).toBeVisible();
+});
+
+test("a thirty-file mixed photo and PDF selection keeps its order", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(120_000);
+  const { mobile } = await openMobile(page, context);
+  const pdf = Buffer.from(await createSyntheticPdf(1));
+  const photo = Buffer.from(await createSyntheticJpeg(240, 320));
+  await mobile.getByTestId("file-input").setInputFiles(
+    Array.from({ length: 30 }, (_, index) => ({
+      name: `${String(index + 1).padStart(2, "0")}-${index % 2 ? "photo.jpg" : "document.pdf"}`,
+      mimeType: index % 2 ? "image/jpeg" : "application/pdf",
+      buffer: index % 2 ? photo : pdf,
+    })),
+  );
+  await expect(mobile.getByRole("heading", { name: "Check these files" })).toBeVisible({
+    timeout: 90_000,
+  });
+  const listed = mobile.locator("ol.mobile-selected > li");
+  await expect(listed).toHaveCount(30);
+  await expect(listed.first()).toContainText("01-document.pdf");
+  await expect(listed.last()).toContainText("30-photo.jpg");
 });
 
 test("one kiosk scan prints multiple selected photos in order", async ({ page, context }) => {
