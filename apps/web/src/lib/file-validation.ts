@@ -470,7 +470,11 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number):
   });
 }
 
-function normalizedDimensions(width: number, height: number, maximumEdge = NORMALIZED_IMAGE_EDGE): { width: number; height: number } {
+function normalizedDimensions(
+  width: number,
+  height: number,
+  maximumEdge = NORMALIZED_IMAGE_EDGE,
+): { width: number; height: number } {
   if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1)
     throw new FileValidationError("damagedFile");
   const edgeScale = Math.min(1, maximumEdge / Math.max(width, height));
