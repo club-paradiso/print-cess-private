@@ -322,7 +322,10 @@ export function BatchMobileFlow({
               ),
             )
           : undefined;
-      if (documentBytes > MAX_PRINT_BUNDLE_BYTES || (photoBudgetBytes !== undefined && photoBudgetBytes < 1)) {
+      if (
+        documentBytes > MAX_PRINT_BUNDLE_BYTES ||
+        (photoBudgetBytes !== undefined && photoBudgetBytes < 1)
+      ) {
         resetPickers();
         setBatchError(copy.batchTooLarge);
         return;
