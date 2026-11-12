@@ -39,30 +39,20 @@ describe("print bundle", () => {
     expect(MAX_PRINT_BUNDLE_FILES).toBe(30);
   });
 
-  it("rejects more than ten documents, including mixed thirty-file batches", () => {
-    const documents = Array.from({ length: 11 }, () => ({
+  it("round-trips thirty PDFs and mixed photo-document bundles in order", () => {
+    const documents = Array.from({ length: 30 }, (_, index) => ({
       fileKind: "pdf" as const,
-      bytes: new Uint8Array([1]),
+      bytes: new Uint8Array([index + 1]),
     }));
-    expect(() => encodePrintBundle(documents)).toThrow(PrintBundleError);
-    const images = Array.from({ length: 29 }, () => ({
-      fileKind: "png" as const,
-      bytes: new Uint8Array([1]),
-    }));
-    expect(() =>
-      encodePrintBundle([...images, { fileKind: "pdf", bytes: new Uint8Array([1]) }]),
-    ).toThrow(PrintBundleError);
-  });
-
-  it("rejects an altered thirty-photo bundle containing a document on decode", () => {
-    const encoded = encodePrintBundle(
-      Array.from({ length: 30 }, () => ({
-        fileKind: "png" as const,
-        bytes: new Uint8Array([1]),
-      })),
+    expect(decodePrintBundle(encodePrintBundle(documents))).toEqual(documents);
+    const mixed = documents.map((entry, index) =>
+      index % 3 === 0
+        ? { fileKind: "png" as const, bytes: entry.bytes }
+        : index % 3 === 1
+          ? { fileKind: "jpeg" as const, bytes: entry.bytes }
+          : { fileKind: "hwpx" as const, bytes: entry.bytes },
     );
-    encoded[12] = 1; // change first entry to PDF after encoding
-    expect(() => decodePrintBundle(encoded)).toThrow(PrintBundleError);
+    expect(decodePrintBundle(encodePrintBundle(mixed))).toEqual(mixed);
   });
 
   it("rejects more than the bounded file count", () => {
