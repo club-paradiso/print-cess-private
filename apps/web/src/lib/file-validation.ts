@@ -116,7 +116,7 @@ export function classifySelectedFile(
 
 export async function validateFileForMobile(
   file: File,
-  options: { allowHwpx?: boolean; trustedGeneratedPdf?: boolean } = {},
+  options: { allowHwpx?: boolean; trustedGeneratedPdf?: boolean; batchPhotoBytes?: number } = {},
 ): Promise<ValidatedMobileFile> {
   const classification = classifySelectedFile(file);
   const sourceLimit = classification === "image" ? MAX_SOURCE_IMAGE_BYTES : MAX_PLAINTEXT_BYTES;
@@ -140,7 +140,7 @@ export async function validateFileForMobile(
   } catch (error) {
     if (!(error instanceof FileValidationError) || error.code !== "unsupportedType") throw error;
     if (classification === "document") throw new FileValidationError("documentNeedsPdf");
-    if (classification === "image") return normalizeBrowserImage(file);
+    if (classification === "image") return normalizeBrowserImage(file, options.batchPhotoBytes);
     throw error;
   }
 
@@ -162,10 +162,14 @@ export async function validateFileForMobile(
 
   const dimensions = fileKind === "png" ? parsePngDimensions(bytes) : parseJpegDimensions(bytes);
   if (
-    bytes.byteLength > MAX_PLAINTEXT_BYTES ||
+    bytes.byteLength > (options.batchPhotoBytes ?? MAX_PLAINTEXT_BYTES) ||
     !dimensionsWithinLimits(dimensions.width, dimensions.height)
   ) {
-    return normalizeBrowserImage(file);
+    try {
+      return await normalizeBrowserImage(file, options.batchPhotoBytes);
+    } finally {
+      bytes.fill(0);
+    }
   }
 
   validateDimensions(dimensions.width, dimensions.height);
@@ -321,30 +325,47 @@ export function parseJpegDimensions(bytes: Uint8Array): { width: number; height:
   throw new FileValidationError("damagedFile");
 }
 
-async function normalizeBrowserImage(file: File): Promise<ValidatedMobileFile> {
+async function normalizeBrowserImage(
+  file: File,
+  byteBudget = MAX_PLAINTEXT_BYTES,
+): Promise<ValidatedMobileFile> {
   let decoded: Awaited<ReturnType<typeof decodeBrowserImage>> | undefined;
   try {
     const source = await convertHeicIfNeeded(file);
     decoded = await decodeBrowserImage(source);
-    const dimensions = normalizedDimensions(decoded.width, decoded.height);
+    // When a visitor selects many photos, avoid transmitting enormous camera
+    // originals. At 2,400 px on the long edge the output is still suitable
+    // for an A4 courtesy print, without an unbounded mobile allocation.
+    const maximumEdge = byteBudget < MAX_PLAINTEXT_BYTES ? 2_400 : NORMALIZED_IMAGE_EDGE;
+    const initial = normalizedDimensions(decoded.width, decoded.height, maximumEdge);
     const canvas = document.createElement("canvas");
-    canvas.width = dimensions.width;
-    canvas.height = dimensions.height;
     const context = canvas.getContext("2d", { alpha: false });
     if (!context) throw new FileValidationError("imageConversionUnsupported");
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, dimensions.width, dimensions.height);
-    context.drawImage(decoded.source, 0, 0, dimensions.width, dimensions.height);
-    const blob = await encodeJpeg(canvas);
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    return {
-      bytes,
-      fileKind: "jpeg",
-      pageCount: 1,
-      pageCountIsExact: true,
-      ...dimensions,
-      normalized: true,
-    };
+
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const scale = 0.82 ** attempt;
+      const dimensions = {
+        width: Math.max(1, Math.round(initial.width * scale)),
+        height: Math.max(1, Math.round(initial.height * scale)),
+      };
+      canvas.width = dimensions.width;
+      canvas.height = dimensions.height;
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, dimensions.width, dimensions.height);
+      context.drawImage(decoded.source, 0, 0, dimensions.width, dimensions.height);
+      const blob = await encodeJpeg(canvas, byteBudget);
+      if (blob) {
+        return {
+          bytes: new Uint8Array(await blob.arrayBuffer()),
+          fileKind: "jpeg",
+          pageCount: 1,
+          pageCountIsExact: true,
+          ...dimensions,
+          normalized: true,
+        };
+      }
+    }
+    throw new FileValidationError("tooLarge");
   } catch (error) {
     if (error instanceof FileValidationError) throw error;
     throw new FileValidationError("imageConversionUnsupported");
@@ -428,12 +449,12 @@ async function decodeBrowserImage(file: Blob): Promise<{
   }
 }
 
-async function encodeJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
+async function encodeJpeg(canvas: HTMLCanvasElement, maximumBytes: number): Promise<Blob | null> {
   for (const quality of JPEG_QUALITIES) {
     const blob = await canvasToBlob(canvas, "image/jpeg", quality);
-    if (blob.size <= MAX_PLAINTEXT_BYTES) return blob;
+    if (blob.size <= maximumBytes) return blob;
   }
-  throw new FileValidationError("tooLarge");
+  return null;
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob> {
@@ -449,10 +470,10 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number):
   });
 }
 
-function normalizedDimensions(width: number, height: number): { width: number; height: number } {
+function normalizedDimensions(width: number, height: number, maximumEdge = NORMALIZED_IMAGE_EDGE): { width: number; height: number } {
   if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1)
     throw new FileValidationError("damagedFile");
-  const edgeScale = Math.min(1, NORMALIZED_IMAGE_EDGE / Math.max(width, height));
+  const edgeScale = Math.min(1, maximumEdge / Math.max(width, height));
   const pixelScale = Math.min(1, Math.sqrt(NORMALIZED_IMAGE_PIXELS / (width * height)));
   const scale = Math.min(edgeScale, pixelScale);
   return {
