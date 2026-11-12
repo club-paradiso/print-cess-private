@@ -9,7 +9,9 @@ export const MAX_PLAINTEXT_BYTES = 10 * 1024 * 1024;
  * `print-quota.ts` and is deliberately not this constant.
  */
 export const MAX_PDF_PAGES = SYSTEM_MAX_PAGE_LIMIT;
-export const MAX_PRINT_BUNDLE_FILES = 10;
+/** A print batch may contain at most 30 photos, but only 10 documents or mixed files. */
+export const MAX_PRINT_BUNDLE_FILES = 30;
+export const MAX_PRINT_BUNDLE_DOCUMENT_FILES = 10;
 export const MAX_PRINT_BUNDLE_BYTES = 32 * 1024 * 1024;
 export const ENVELOPE_FIXED_HEADER_BYTES = 26;
 export const P256_PUBLIC_KEY_BYTES = 65;
