@@ -13,7 +13,12 @@ export type { ValidatedMobileFile } from "./file-validation";
 
 export async function validateMobileDocument(
   file: File,
-  options: { allowHwp?: boolean; allowHwpx?: boolean; trustedGeneratedPdf?: boolean; batchPhotoBytes?: number } = {},
+  options: {
+    allowHwp?: boolean;
+    allowHwpx?: boolean;
+    trustedGeneratedPdf?: boolean;
+    batchPhotoBytes?: number;
+  } = {},
 ): Promise<ValidatedMobileFile> {
   if (!isHwpSelection(file)) {
     return validateFileForMobile(file, {
