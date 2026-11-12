@@ -34,6 +34,10 @@ import { LOCALE_NAMES, SUPPORTED_LOCALES, type SupportedLocale } from "@print-ce
 import {
   MAX_PRINT_BUNDLE_BYTES,
   MAX_PRINT_BUNDLE_FILES,
+  MAX_PRINT_BUNDLE_DOCUMENT_FILES,
+  MAX_PLAINTEXT_BYTES,
+  PRINT_BUNDLE_ENTRY_HEADER_BYTES,
+  PRINT_BUNDLE_HEADER_BYTES,
   decidePrintQuota,
   encodePrintBundle,
   printBundleEncodedSize,
@@ -63,6 +67,7 @@ import {
   ApiClientError,
 } from "@/lib/api-client";
 import { quotaDocument } from "@/lib/print-quota-document";
+import { classifySelectedFile } from "@/lib/file-validation";
 
 import { PrintQuotaDialog } from "./print-quota-dialog";
 import {
@@ -172,6 +177,7 @@ export function BatchMobileFlow({
   const [errorKey, setErrorKey] = useState("networkError");
   const [fileErrorKey, setFileErrorKey] = useState<string>();
   const [batchError, setBatchError] = useState<string>();
+  const [staffApprovalNeeded, setStaffApprovalNeeded] = useState(false);
   const [fileNoticeKey, setFileNoticeKey] = useState<string>();
   const [quotaBlock, setQuotaBlock] = useState<PrintQuotaDecision>();
   const [progressKey, setProgressKey] = useState("encrypting");
@@ -201,6 +207,7 @@ export function BatchMobileFlow({
     });
     setFileErrorKey(undefined);
     setBatchError(undefined);
+    setStaffApprovalNeeded(false);
     setFileNoticeKey(undefined);
     resetPickers();
   }, [resetPickers]);
@@ -290,18 +297,37 @@ export function BatchMobileFlow({
       setBatchError(undefined);
       setFileNoticeKey(undefined);
       setQuotaBlock(undefined);
-      if (files.length > MAX_PRINT_BUNDLE_FILES) {
+      const photoSelection = files.every((file) => classifySelectedFile(file) === "image");
+      const maximumFiles = photoSelection
+        ? MAX_PRINT_BUNDLE_FILES
+        : MAX_PRINT_BUNDLE_DOCUMENT_FILES;
+      if (files.length > maximumFiles) {
         resetPickers();
-        setBatchError(copy.tooManyFiles);
+        setBatchError(photoSelection ? copy.tooManyPhotos : copy.tooManyFiles);
         return;
       }
 
+      // Keep the existing 32 MiB authenticated envelope. Photo-only batches
+      // automatically shrink oversized images before bundling, one at a time.
+      const batchPhotoBytes =
+        photoSelection && files.length > 1
+          ? Math.min(
+              MAX_PLAINTEXT_BYTES,
+              Math.floor(
+                (MAX_PRINT_BUNDLE_BYTES -
+                  PRINT_BUNDLE_HEADER_BYTES -
+                  PRINT_BUNDLE_ENTRY_HEADER_BYTES * files.length) /
+                  files.length,
+              ),
+            )
+          : undefined;
       const next: SelectedDocument[] = [];
       try {
         for (const file of files) {
           const validated = await validateMobileDocument(file, {
             allowHwp: supportsHwp,
             allowHwpx: supportsHwpx,
+            ...(batchPhotoBytes === undefined ? {} : { batchPhotoBytes }),
           });
           next.push({ file, validated });
         }
@@ -312,16 +338,24 @@ export function BatchMobileFlow({
         ) {
           throw new BatchSelectionError(copy.batchTooLarge);
         }
-        // The whole selection is judged together. Ten files that each clear the
-        // limit on their own are still ten files' worth of paper.
+        // Keep the existing eleven-page courtesy policy. Larger photo batches
+        // can still proceed to the native kiosk's staff authorization prompt;
+        // the phone cannot grant an override or bypass the kiosk check.
+        const photoOnly = next.every(
+          ({ validated }) => validated.fileKind === "jpeg" || validated.fileKind === "png",
+        );
         const quota = decidePrintQuota(next.map(({ validated }) => quotaDocument(validated)));
-        if (quota.kind !== "allowed") {
+        if (
+          quota.kind === "hardLimitExceeded" ||
+          (quota.kind === "staffOverrideRequired" && !photoOnly)
+        ) {
           for (const item of next) item.validated.bytes.fill(0);
           resetPickers();
           setQuotaBlock(quota);
           return;
         }
         clearDocuments();
+        setStaffApprovalNeeded(quota.kind === "staffOverrideRequired");
         setDocuments(next);
         setStage("preview");
       } catch (error) {
@@ -335,6 +369,7 @@ export function BatchMobileFlow({
       clearDocuments,
       copy.batchTooLarge,
       copy.tooManyFiles,
+      copy.tooManyPhotos,
       resetPickers,
       supportsHwp,
       supportsHwpx,
@@ -606,6 +641,11 @@ export function BatchMobileFlow({
               {formatBatchCopy(copy.selected, documents.length)}
             </p>
           )}
+          {staffApprovalNeeded ? (
+            <p className="mobile-file-notice" role="status">
+              {copy.staffApprovalNotice}
+            </p>
+          ) : null}
           {/* Each setting as its own chip, so "A4" and "one side" can be read at
               a glance; the sentence is still read whole by a screen reader. */}
           <p className="mobile-print-settings">
