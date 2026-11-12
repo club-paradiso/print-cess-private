@@ -10,12 +10,13 @@ Print-cess uses two deliberately separate page limits.
 
 The public courtesy limit is 11 pages. The technical ceiling is 50 pages. Raising one must never silently raise the other.
 
-## Thirty-photo batch selection
+## Thirty-file batch selection
 
-- A **photo-only** selection may contain up to **30 images** in one encrypted print bundle. Any selection including PDFs, HWP or HWPX remains limited to **10 files**. The native bundle parser enforces this distinction again after decryption.
-- The total encrypted payload budget stays at **32 MiB**. The phone can rescale and JPEG-compress oversized images locally to fit a per-photo budget; the original files stay on the phone. A batch that cannot meet the budget is rejected before upload.
-- **Selecting 30 photos does not raise the public free-page allowance.** At 12–30 pages the phone explains that staff approval will be required, then sends the batch for the existing kiosk-side approval flow. The native renderer verifies the real page count and obtains staff authorization before submitting the entire job.
-- The system ceiling of 50 pages and the original PDF/Hancom rules stay unchanged. No client-provided quota override is trusted.
+- A print batch can contain up to **30 files**, including JPEG/PNG photos, PDFs, and supported HWP/HWPX files, in any order or mixture. Both the browser and native kiosk parser enforce this hard count.
+- The authenticated bundle stays within **32 MiB in total**, including its per-file headers. A single document still has its existing size limit. Mobile image normalization can reduce photos locally to fit the remaining budget after documents are accounted for; documents are not silently compressed or modified.
+- Selecting 30 files does not increase the free print allowance of **11 pages**. Jobs with 12–50 known pages can reach the existing Windows-kiosk staff approval step. An unstaffed browser kiosk cannot bypass the quota, and staff cannot authorize more than 50 pages.
+- HWP/HWPX pagination is provisional on mobile and is verified after the native kiosk renders it. Malformed, oversized, unsupported, or over-quota batches must be rejected before the spooler receives them.
+- The source files remain local until the visitor expressly initiates the encrypted transfer, and the original document ordering is preserved.
 
 ## Counting
 
