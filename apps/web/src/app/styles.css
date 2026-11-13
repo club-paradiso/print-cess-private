@@ -953,6 +953,18 @@ ol.mobile-selected li::before {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+/* Thirty-file batches must not become several screens tall. The ordered list
+   scrolls independently while the print/replace controls remain reachable. */
+ol.mobile-selected--scrollable {
+  max-height: min(46vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 8px;
+}
+ol.mobile-selected--scrollable:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
 .mobile-print-settings {
   display: flex;
   flex-wrap: wrap;

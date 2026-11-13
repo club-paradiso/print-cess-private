@@ -281,7 +281,7 @@ export function KioskWaitingScreen({
                 {maxFiles ? (
                   <small>
                     {locale === "ko"
-                      ? `사진과 PDF, 한 번에 최대 ${maxFiles}개`
+                      ? `사진·문서 합계 최대 ${maxFiles}개`
                       : translate(locale, "homePrintStepPickBody")}
                     <span lang="en"> · Choose up to {maxFiles} files</span>
                   </small>

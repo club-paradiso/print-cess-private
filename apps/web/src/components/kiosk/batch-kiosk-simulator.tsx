@@ -14,6 +14,7 @@ import {
 import type { SupportedLocale } from "@print-cess/i18n";
 import {
   MAX_PRINT_BUNDLE_FILES,
+  decidePrintQuota,
   parsePrintBundle,
   type PrintableFileKind,
 } from "@print-cess/protocol";
@@ -335,10 +336,16 @@ async function consumeValidateAndPrint(
 
     const nextArtifacts: PrintArtifact[] = [];
     try {
+      const pageCounts: number[] = [];
       for (const item of items) {
-        await validateBrowserPrintable(item.bytes, item.fileKind);
+        pageCounts.push(await validateBrowserPrintable(item.bytes, item.fileKind));
         nextArtifacts.push(createPrintArtifact(item.bytes, item.fileKind));
       }
+      // This browser-based kiosk has no trusted staff authenticator. Do not
+      // let a larger photo selection bypass the existing courtesy policy.
+      // The native Windows kiosk can request staff approval for 12–50 pages.
+      const quota = decidePrintQuota(pageCounts.map((pages) => ({ pages, exact: true })));
+      if (quota.kind !== "allowed") throw new Error("Staff approval requires the Windows kiosk");
     } catch (error) {
       for (const artifact of nextArtifacts) revokePrintArtifact(artifact);
       throw error;
@@ -374,12 +381,14 @@ async function validateBrowserPrintable(bytes: Uint8Array, expectedKind: Printab
   }
   const detected = detectFileKind(bytes);
   if (detected !== expectedKind) throw new Error("file kind mismatch");
-  if (detected === "pdf") await validatePdf(bytes);
-  else if (detected === "png" || detected === "jpeg") {
+  if (detected === "pdf") return validatePdf(bytes);
+  if (detected === "png" || detected === "jpeg") {
     const { width, height } =
       detected === "png" ? parsePngDimensions(bytes) : parseJpegDimensions(bytes);
     validateDimensions(width, height);
-  } else throw new Error("unsupported browser print kind");
+    return 1;
+  }
+  throw new Error("unsupported browser print kind");
 }
 
 function printableKind(kind: string): PrintableFileKind {

@@ -34,6 +34,9 @@ import { LOCALE_NAMES, SUPPORTED_LOCALES, type SupportedLocale } from "@print-ce
 import {
   MAX_PRINT_BUNDLE_BYTES,
   MAX_PRINT_BUNDLE_FILES,
+  MAX_PLAINTEXT_BYTES,
+  PRINT_BUNDLE_ENTRY_HEADER_BYTES,
+  PRINT_BUNDLE_HEADER_BYTES,
   decidePrintQuota,
   encodePrintBundle,
   printBundleEncodedSize,
@@ -63,6 +66,7 @@ import {
   ApiClientError,
 } from "@/lib/api-client";
 import { quotaDocument } from "@/lib/print-quota-document";
+import { classifySelectedFile } from "@/lib/file-validation";
 
 import { PrintQuotaDialog } from "./print-quota-dialog";
 import {
@@ -172,6 +176,7 @@ export function BatchMobileFlow({
   const [errorKey, setErrorKey] = useState("networkError");
   const [fileErrorKey, setFileErrorKey] = useState<string>();
   const [batchError, setBatchError] = useState<string>();
+  const [staffApprovalNeeded, setStaffApprovalNeeded] = useState(false);
   const [fileNoticeKey, setFileNoticeKey] = useState<string>();
   const [quotaBlock, setQuotaBlock] = useState<PrintQuotaDecision>();
   const [progressKey, setProgressKey] = useState("encrypting");
@@ -201,6 +206,7 @@ export function BatchMobileFlow({
     });
     setFileErrorKey(undefined);
     setBatchError(undefined);
+    setStaffApprovalNeeded(false);
     setFileNoticeKey(undefined);
     resetPickers();
   }, [resetPickers]);
@@ -296,12 +302,41 @@ export function BatchMobileFlow({
         return;
       }
 
+      // Keep the existing 32 MiB authenticated envelope. Budget images from
+      // what remains after accounting for PDFs and Hangul files, including
+      // mixed selections. Originals stay on the visitor's phone.
+      const imageCount = files.filter((file) => classifySelectedFile(file) === "image").length;
+      const documentBytes = files
+        .filter((file) => classifySelectedFile(file) !== "image")
+        .reduce((sum, file) => sum + file.size, 0);
+      const photoBudgetBytes =
+        imageCount > 0 && files.length > 1
+          ? Math.min(
+              MAX_PLAINTEXT_BYTES,
+              Math.floor(
+                (MAX_PRINT_BUNDLE_BYTES -
+                  PRINT_BUNDLE_HEADER_BYTES -
+                  PRINT_BUNDLE_ENTRY_HEADER_BYTES * files.length -
+                  documentBytes) /
+                  imageCount,
+              ),
+            )
+          : undefined;
+      if (
+        documentBytes > MAX_PRINT_BUNDLE_BYTES ||
+        (photoBudgetBytes !== undefined && photoBudgetBytes < 1)
+      ) {
+        resetPickers();
+        setBatchError(copy.batchTooLarge);
+        return;
+      }
       const next: SelectedDocument[] = [];
       try {
         for (const file of files) {
           const validated = await validateMobileDocument(file, {
             allowHwp: supportsHwp,
             allowHwpx: supportsHwpx,
+            ...(photoBudgetBytes === undefined ? {} : { batchPhotoBytes: photoBudgetBytes }),
           });
           next.push({ file, validated });
         }
@@ -312,16 +347,17 @@ export function BatchMobileFlow({
         ) {
           throw new BatchSelectionError(copy.batchTooLarge);
         }
-        // The whole selection is judged together. Ten files that each clear the
-        // limit on their own are still ten files' worth of paper.
+        // The eleven-page courtesy policy still applies to photos, PDFs and
+        // mixed print jobs. The native Windows kiosk alone may authorize more.
         const quota = decidePrintQuota(next.map(({ validated }) => quotaDocument(validated)));
-        if (quota.kind !== "allowed") {
+        if (quota.kind === "hardLimitExceeded") {
           for (const item of next) item.validated.bytes.fill(0);
           resetPickers();
           setQuotaBlock(quota);
           return;
         }
         clearDocuments();
+        setStaffApprovalNeeded(quota.kind === "staffOverrideRequired");
         setDocuments(next);
         setStage("preview");
       } catch (error) {
@@ -593,7 +629,15 @@ export function BatchMobileFlow({
               </div>
             </>
           ) : (
-            <ol className="mobile-selected drop-file-list">
+            <ol
+              className={
+                documents.length > 8
+                  ? "mobile-selected drop-file-list mobile-selected--scrollable"
+                  : "mobile-selected drop-file-list"
+              }
+              tabIndex={documents.length > 8 ? 0 : undefined}
+              aria-label={formatBatchCopy(copy.selected, documents.length)}
+            >
               {documents.map(({ file, validated }, index) => (
                 <li key={`${file.name}-${file.size}-${file.lastModified}-${index}`}>
                   <FileRow file={file} text={text} detail={pagesDetail(validated, copy)} />
@@ -606,6 +650,11 @@ export function BatchMobileFlow({
               {formatBatchCopy(copy.selected, documents.length)}
             </p>
           )}
+          {staffApprovalNeeded ? (
+            <p className="mobile-file-notice" role="status">
+              {copy.staffApprovalNotice}
+            </p>
+          ) : null}
           {/* Each setting as its own chip, so "A4" and "one side" can be read at
               a glance; the sentence is still read whole by a screen reader. */}
           <p className="mobile-print-settings">

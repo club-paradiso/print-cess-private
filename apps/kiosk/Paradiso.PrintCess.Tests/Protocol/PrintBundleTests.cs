@@ -34,6 +34,47 @@ public sealed class PrintBundleTests
         Assert.Throws<EnvelopeFormatException>(() => PrintBundle.Parse(valid));
     }
 
+    [Fact]
+    public void ParseAcceptsThirtyPhotosInOrder()
+    {
+        var encoded = Encode(Enumerable.Range(0, 30)
+            .Select(index => (DocumentKind.Jpeg, new byte[] { 0xff, 0xd8, checked((byte)index) }))
+            .ToArray());
+        using var bundle = PrintBundle.Parse(encoded);
+        Assert.Equal(30, bundle.Entries.Count);
+        Assert.Equal(29, bundle.Entries[29].Bytes[2]);
+    }
+
+    [Fact]
+    public void ParseAcceptsThirtyMixedDocumentsInOrder()
+    {
+        var kinds = new[] { DocumentKind.Pdf, DocumentKind.Jpeg, DocumentKind.Png, DocumentKind.Hwpx, DocumentKind.Hwp };
+        var originals = Enumerable.Range(0, 30)
+            .Select(index => (kinds[index % kinds.Length], new byte[] { checked((byte)index), 1 }))
+            .ToArray();
+
+        using var bundle = PrintBundle.Parse(Encode(originals));
+
+        Assert.Equal(30, bundle.Entries.Count);
+        for (var index = 0; index < originals.Length; index++)
+        {
+            Assert.Equal(originals[index].Item1, bundle.Entries[index].Kind);
+            Assert.Equal(originals[index].Item2, bundle.Entries[index].Bytes);
+        }
+    }
+
+    [Fact]
+    public void ParseRejectsThirtyOneDocumentsOrPhotos()
+    {
+        foreach (var kind in new[] { DocumentKind.Pdf, DocumentKind.Jpeg })
+        {
+            var encoded = Encode(Enumerable.Range(0, 31)
+                .Select(_ => (kind, new byte[] { 1 }))
+                .ToArray());
+            Assert.Throws<EnvelopeFormatException>(() => PrintBundle.Parse(encoded));
+        }
+    }
+
     private static byte[] Encode(params (DocumentKind Kind, byte[] Bytes)[] items)
     {
         var length = 12 + items.Sum(item => 8 + item.Bytes.Length);

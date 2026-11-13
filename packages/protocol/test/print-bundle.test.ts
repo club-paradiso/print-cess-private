@@ -29,6 +29,32 @@ describe("print bundle", () => {
     );
   });
 
+  it("round-trips thirty photos in their original order", () => {
+    const photos = Array.from({ length: 30 }, (_, index) => ({
+      fileKind: "jpeg" as const,
+      bytes: new Uint8Array([0xff, 0xd8, index]),
+    }));
+    const encoded = encodePrintBundle(photos);
+    expect(decodePrintBundle(encoded)).toEqual(photos);
+    expect(MAX_PRINT_BUNDLE_FILES).toBe(30);
+  });
+
+  it("round-trips thirty PDFs and mixed photo-document bundles in order", () => {
+    const documents = Array.from({ length: 30 }, (_, index) => ({
+      fileKind: "pdf" as const,
+      bytes: new Uint8Array([index + 1]),
+    }));
+    expect(decodePrintBundle(encodePrintBundle(documents))).toEqual(documents);
+    const mixed = documents.map((entry, index) =>
+      index % 3 === 0
+        ? { fileKind: "png" as const, bytes: entry.bytes }
+        : index % 3 === 1
+          ? { fileKind: "jpeg" as const, bytes: entry.bytes }
+          : { fileKind: "hwpx" as const, bytes: entry.bytes },
+    );
+    expect(decodePrintBundle(encodePrintBundle(mixed))).toEqual(mixed);
+  });
+
   it("rejects more than the bounded file count", () => {
     expect(() =>
       encodePrintBundle(
