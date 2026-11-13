@@ -60,10 +60,8 @@ test("twelve pages shows the staff-approval notice without a fake paywall", asyn
   await expect(mobile.getByRole("button", { name: "Print 1 copy" })).toBeVisible();
   await expect(mobile.getByRole("dialog")).toHaveCount(0);
 });
-test("a 37-page PDF requires staff approval and offers no checkout", async ({
-  page,
-  context,
-}) => {
+
+test("a 37-page PDF requires staff approval and offers no checkout", async ({ page, context }) => {
   const mobile = await openMobile(page, context);
   await pickPdf(mobile, 37);
 
@@ -73,10 +71,8 @@ test("a 37-page PDF requires staff approval and offers no checkout", async ({
   await expect(mobile.getByText("₩20,000,000")).toHaveCount(0);
   await expect(mobile.getByRole("dialog")).toHaveCount(0);
 });
-test("staff authorization is not offered on the visitor's phone", async ({
-  page,
-  context,
-}) => {
+
+test("staff authorization is not offered on the visitor's phone", async ({ page, context }) => {
   const mobile = await openMobile(page, context);
   await pickPdf(mobile, 20);
 
@@ -84,6 +80,7 @@ test("staff authorization is not offered on the visitor's phone", async ({
   await expect(mobile.getByRole("button", { name: "Staff access" })).toHaveCount(0);
   await expect(mobile.getByRole("heading", { name: "Is this the right page?" })).toBeVisible();
 });
+
 test("past the technical ceiling the joke stops", async ({ page, context }) => {
   const mobile = await openMobile(page, context);
   await pickPdf(mobile, 51);
@@ -123,6 +120,7 @@ test("a mixed batch is judged on its total, not file by file", async ({ page, co
   await expect(staffNotice(mobile)).toBeVisible();
   await expect(mobile.getByRole("dialog")).toHaveCount(0);
 });
+
 test("a batch one page under the limit still prints", async ({ page, context }) => {
   const mobile = await openMobile(page, context);
   await mobile.getByTestId("file-input").setInputFiles([
@@ -156,6 +154,7 @@ test("the staff-approval preview has no accessibility violations", async ({ page
     .analyze();
   expect(results.violations).toEqual([]);
 });
+
 test("@viewport the staff-approval preview fits a phone without sideways scrolling", async ({
   page,
   context,
