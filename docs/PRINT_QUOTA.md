@@ -2,11 +2,11 @@
 
 Print-cess uses two deliberately separate page limits.
 
-| Range       | Public web flow                                 | Kiosk authority                                       |
-| ----------- | ----------------------------------------------- | ----------------------------------------------------- |
-| 1–11 pages  | Allowed                                         | Allowed after native validation                       |
-| 12–50 pages | Allows encrypted transfer with an explicit staff-approval notice; does not grant approval | Requires a staff password after native rendering |
-| 51+ pages   | Hard-limit explanation; no plan is offered      | Always rejected, including after staff authentication |
+| Range       | Public web flow                                   | Kiosk authority                                       |
+| ----------- | ------------------------------------------------- | ----------------------------------------------------- |
+| 1–11 pages  | Allowed                                           | Allowed after native validation                       |
+| 12–50 pages | Staff approval notice; encrypted transfer allowed | Requires staff password after native rendering        |
+| 51+ pages   | Hard-limit explanation; no plan is offered        | Always rejected, including after staff authentication |
 
 The public courtesy limit is 11 pages. The technical ceiling is 50 pages. Raising one must never silently raise the other.
 
