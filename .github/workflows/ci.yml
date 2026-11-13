@@ -17,7 +17,9 @@ concurrency:
 jobs:
   web:
     name: Web
-    runs-on: ubuntu-latest
+    # Playwright WebKit WPE currently links libicu74 from Ubuntu 24.04.
+    # ubuntu-latest moved to 26.04, where libicudata.so.74 is absent.
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
       CI: "true"
@@ -96,7 +98,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: playwright-${{ runner.os }}-ubuntu-24.04-${{ hashFiles('pnpm-lock.yaml') }}
 
       # Chromium is covered by the hosted image, but Playwright WebKit still
       # needs Linux runtime libraries that are not guaranteed to be preinstalled
