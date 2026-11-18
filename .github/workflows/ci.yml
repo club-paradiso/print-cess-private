@@ -17,9 +17,13 @@ concurrency:
 jobs:
   web:
     name: Web
-    # Playwright WebKit WPE currently links libicu74 from Ubuntu 24.04.
-    # ubuntu-latest moved to 26.04, where libicudata.so.74 is absent.
+    # Use the matching official Playwright image. Its browsers and Ubuntu
+    # system libraries are preinstalled, avoiding slow apt mirrors in CI.
+    # Keep this version in sync with apps/web's @playwright/test dependency.
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
+      options: --ipc=host
     timeout-minutes: 35
     env:
       CI: "true"
@@ -84,35 +88,8 @@ jobs:
       - name: Production build
         run: pnpm build
 
-      # A stalled Ubuntu mirror once spent 23 of this job's 35 minutes inside
-      # `playwright install --with-deps` and the end-to-end tests never ran.
-      # Drop a stalled connection instead of waiting on it, cache the browser
-      # binaries, and bound the two installs separately so a slow mirror fails
-      # one short step rather than silently consuming the whole job budget.
-      - name: Make apt tolerate a slow mirror
-        run: |
-          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\n' \
-            | sudo tee /etc/apt/apt.conf.d/99-print-cess-retries > /dev/null
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-ubuntu-24.04-${{ hashFiles('pnpm-lock.yaml') }}
-
-      # Chromium is covered by the hosted image, but Playwright WebKit still
-      # needs Linux runtime libraries that are not guaranteed to be preinstalled
-      # (for example libevent-2.1.so.7). Install only WebKit's system deps, after
-      # applying the bounded apt retry/timeout policy above, so mobile viewport
-      # coverage works without returning to an unbounded all-browser apt step.
-      - name: Install Playwright WebKit system dependencies
-        timeout-minutes: 8
-        run: pnpm --filter @print-cess/web exec playwright install-deps webkit
-
-      - name: Install Playwright browsers
-        timeout-minutes: 8
-        run: pnpm --filter @print-cess/web exec playwright install chromium webkit
-
+      # The version-matched image supplies Chromium, WebKit and their libraries.
+      # Do not invoke apt or download browsers on the CI critical path.
       - name: End-to-end tests
         run: pnpm test:e2e
 

@@ -23,10 +23,7 @@ describe("splitFirstSentence", () => {
   it("leaves a single sentence, or unpunctuated text, whole", () => {
     expect(splitFirstSentence("All done")).toEqual(["All done", ""]);
     expect(splitFirstSentence("Printing failed.")).toEqual(["Printing failed.", ""]);
-    expect(splitFirstSentence("ลิงก์นี้ไม่สมบูรณ์ สแกนใหม่")).toEqual([
-      "ลิงก์นี้ไม่สมบูรณ์ สแกนใหม่",
-      "",
-    ]);
+    expect(splitFirstSentence("ลิงก์นี้ไม่สมบูรณ์ สแกนใหม่")).toEqual(["ลิงก์นี้ไม่สมบูรณ์ สแกนใหม่", ""]);
   });
 
   it("does not split inside a number or a file extension", () => {
