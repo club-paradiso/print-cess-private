@@ -22,7 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="QRCoder" Version="1.8.0" />
+    <PackageReference Include="QRCoder" Version="1.8.1" />
     <ProjectReference Include="..\Paradiso.PrintCess.Core\Paradiso.PrintCess.Core.csproj" />
     <ProjectReference Include="..\Paradiso.PrintCess.Infrastructure\Paradiso.PrintCess.Infrastructure.csproj" />
   </ItemGroup>
