@@ -67,8 +67,8 @@ print flow and the file hand-off:
 | `mn`    | Монгол           | Yes                        |
 | `th`    | ไทย              | Yes                        |
 | `ru`    | Русский          | Yes                        |
-| `ne`    | नेपाली           | Yes                        |
-| `km`    | ខ្មែរ            | Yes                        |
+| `ne`    | नेपाली            | Yes                        |
+| `km`    | ខ្មែរ             | Yes                        |
 | `ar`    | العربية          | Yes                        |
 | `uk`    | Українська       | Yes                        |
 
