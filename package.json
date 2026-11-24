@@ -33,7 +33,7 @@
     "eslint": "10.15.0",
     "eslint-config-next": "16.4.6",
     "prettier": "3.10.1",
-    "turbo": "2.11.11",
+    "turbo": "2.11.13",
     "typescript": "7.0.2"
   }
 }
